@@ -1,0 +1,18 @@
+{
+  "name": "California Store ERP",
+  "short_name": "Calif. Store",
+  "description": "ERP para lojas de roupas — PDV, estoque, financeiro",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: californiastore-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: californiastore
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - californiastore-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: californiastore-app
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/californiastore
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: your-secret-key-change-this-in-production
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    networks:
+      - californiastore-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  californiastore-network:
+    driver: bridge

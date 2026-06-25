@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1">
+<title>PDV Mobile - California Store</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f5; display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 16px; }
+  
+  .mockup { width: 375px; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 3px solid #333; }
+  .status-bar { background: #18181a; color: white; padding: 10px 20px; font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; }
+  
+  .pdv { display: flex; flex-direction: column; height: 700px; background: white; }
+  
+  /* TABS */
+  .tabs { display: flex; border-bottom: 1px solid #e5e7eb; background: white; }
+  .tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; font-size: 13px; font-weight: 500; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; color: #9ca3af; transition: all 0.2s; }
+  .tab.active { color: #18181a; border-bottom-color: #18181a; }
+  .tab-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #18181a; color: white; font-size: 10px; font-weight: 700; }
+  
+  .search-bar { padding: 12px; border-bottom: 1px solid #e5e7eb; background: white; }
+  .search-wrap { position: relative; }
+  .search-wrap input { width: 100%; padding: 10px 38px 10px 38px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 15px; background: #f9fafb; }
+  .search-wrap input:focus { outline: none; border-color: #18181a; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 16px; }
+  .clear-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none; color: #9ca3af; cursor: pointer; font-size: 16px; padding: 4px; display: flex; }
+  .clear-btn:hover { color: #374151; }
+  
+  .products { flex: 1; overflow-y: auto; padding: 12px; background: white; }
+  
+  .filter-scroll { display: flex; gap: 6px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; overflow-x: auto; white-space: nowrap; -ms-overflow-style: none; scrollbar-width: none; }
+  .filter-scroll::-webkit-scrollbar { display: none; }
+  .chip { padding: 5px 12px; border-radius: 999px; font-size: 11px; border: none; background: #f3f4f6; color: #6b7280; cursor: pointer; font-weight: 500; flex-shrink: 0; }
+  .chip.active { background: #18181a; color: white; }
+  
+  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .product-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: white; }
+  .product-card.out { opacity: 0.4; }
+  .product-top { display: flex; gap: 8px; }
+  .product-img { width: 55px; height: 55px; border-radius: 6px; background: linear-gradient(135deg, #f3f4f6, #e5e7eb); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .product-info { min-width: 0; flex: 1; }
+  .product-name { font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .product-tags { display: flex; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
+  .tag { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: #f3f4f6; color: #6b7280; font-weight: 500; }
+  .tag.brand { background: #18181a10; color: #18181a; }
+  .product-var { font-size: 10px; color: #9ca3af; margin-top: 3px; }
+  .product-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; }
+  .price { font-weight: 700; font-size: 14px; color: #18181a; }
+  .stock-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #f3f4f6; color: #6b7280; }
+  .stock-badge.out { background: #fef2f2; color: #dc2626; }
+  .add-btn { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 5px 10px; border: none; border-radius: 6px; background: #18181a; color: white; cursor: pointer; }
+  .add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  
+  .load-more { text-align: center; padding: 16px; }
+  .load-more button { padding: 8px 20px; font-size: 12px; border-radius: 8px; border: 1px solid #d1d5db; background: white; color: #374151; cursor: pointer; }
+
+  /* CART TAB */
+  .cart-panel { flex: 1; display: flex; flex-direction: column; background: white; }
+  .cart-header { padding: 12px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; }
+  .cart-header .badge { margin-left: auto; font-size: 10px; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #6b7280; }
+  .cart-items { flex: 1; overflow-y: auto; padding: 8px 12px; }
+  .cart-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+  .cart-item:last-child { border: none; }
+  .cart-thumb { width: 32px; height: 32px; border-radius: 5px; background: #f3f4f6; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .cart-detail { flex: 1; min-width: 0; }
+  .cart-detail p { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cart-detail span { font-size: 9px; color: #9ca3af; }
+  .cart-qty { display: flex; align-items: center; gap: 4px; }
+  .cart-qty button { width: 26px; height: 26px; border-radius: 5px; border: 1px solid #d1d5db; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; }
+  .cart-qty span { width: 24px; text-align: center; font-size: 12px; font-weight: 600; }
+  .cart-subtotal { font-size: 11px; font-weight: 600; min-width: 60px; text-align: right; }
+  .cart-remove { width: 26px; height: 26px; border-radius: 5px; border: none; background: transparent; color: #dc2626; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .cart-footer { padding: 12px; border-top: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 10px; }
+  .client-row { display: flex; gap: 8px; }
+  .client-input { flex: 1; padding: 7px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 12px; }
+  .client-add { padding: 7px 10px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 18px; cursor: pointer; }
+  
+  .payment-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .payment-btn { padding: 8px 0; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 9px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .payment-btn .icon { font-size: 16px; }
+  .payment-btn.active { background: #18181a; border-color: #18181a; color: white; }
+  
+  .discount-row { display: flex; align-items: center; gap: 6px; }
+  .discount-row label { font-size: 11px; color: #6b7280; }
+  .discount-toggle { display: flex; border-radius: 5px; border: 1px solid #d1d5db; overflow: hidden; }
+  .discount-toggle button { padding: 3px 10px; border: none; font-size: 10px; cursor: pointer; background: white; color: #6b7280; }
+  .discount-toggle button.active { background: #18181a; color: white; }
+  .discount-input { width: 60px; padding: 4px 6px; border-radius: 5px; border: 1px solid #d1d5db; font-size: 12px; text-align: right; }
+  
+  .total-row { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #e5e7eb; }
+  .total-left .subtotal { font-size: 10px; color: #9ca3af; }
+  .total-left .total { font-size: 20px; font-weight: 700; }
+  .finish-btn { padding: 12px 24px; border-radius: 8px; border: none; background: #18181a; color: white; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .finish-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  
+  /* FAB */
+  .fab { position: fixed; bottom: 20px; right: 20px; display: flex; align-items: center; gap: 8px; background: #18181a; color: white; padding: 12px 18px; border-radius: 999px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px; font-weight: 600; z-index: 10; }
+  .fab-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.2); color: white; font-size: 10px; font-weight: 700; }
+
+  .desktop-label { text-align: center; font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; max-width: 375px; }
+  .desktop-label strong { color: #18181a; }
+  
+  .legend { max-width: 375px; font-size: 12px; color: #6b7280; display: flex; flex-direction: column; gap: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-item .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="mockup">
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>📶 🔋</span>
+  </div>
+
+  <div class="pdv">
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active">🔍 Produtos</button>
+      <button class="tab">🛒 Carrinho <span class="tab-badge">2</span></button>
+    </div>
+
+    <!-- PANEL: PRODUTOS -->
+    <div class="products">
+      <div class="search-bar" style="padding-top:0">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Buscar por nome, código..." value="camiseta" />
+          <button class="clear-btn">✕</button>
+        </div>
+      </div>
+
+      <div class="filter-scroll">
+        <button class="chip active">Todas</button>
+        <button class="chip">Camisetas</button>
+        <button class="chip">Calças</button>
+        <button class="chip">Vestidos</button>
+        <button class="chip">Acessórios</button>
+        <button class="chip">Moletons</button>
+        <button class="chip">Shorts</button>
+        <button class="chip">Jaquetas</button>
+      </div>
+
+      <div class="product-grid">
+        <div class="product-card">
+          <div class="product-top">
+            <div class="product-img">👕</div>
+            <div class="product-info">
+              <div class="product-name">Camiseta Oversized</div>
+              <div class="product-tags">
+                <span class="tag brand">California</span>
+                <span class="tag">CT-001</span>
+              </div>
+              <div class="product-var">Preto / GG</div>
+            </div>
+          </div>
+          <div class="product-bottom">
+            <span class="price">R$ 89,90</span>
+            <div>
+              <span class="stock-badge">12 disp</span>
+              <button class="add-btn" style="margin-left:6px">➕ Add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-top">
+            <div class="product-img">👕</div>
+            <div class="product-info">
+              <div class="product-name">Regata Slim</div>
+              <div class="product-tags">
+                <span class="tag brand">Basic</span>
+                <span class="tag">RG-003</span>
+              </div>
+              <div class="product-var">Branca / M</div>
+            </div>
+          </div>
+          <div class="product-bottom">
+            <span class="price">R$ 59,90</span>
+            <div>
+              <span class="stock-badge">8 disp</span>
+              <button class="add-btn" style="margin-left:6px">➕ Add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-top">
+            <div class="product-img">👕</div>
+            <div class="product-info">
+              <div class="product-name">Camiseta Básica</div>
+              <div class="product-tags">
+                <span class="tag brand">Comfort</span>
+                <span class="tag">CB-022</span>
+              </div>
+              <div class="product-var">Azul Marinho / P</div>
+            </div>
+          </div>
+          <div class="product-bottom">
+            <span class="price">R$ 49,90</span>
+            <div>
+              <span class="stock-badge">5 disp</span>
+              <button class="add-btn" style="margin-left:6px">➕ Add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card out">
+          <div class="product-top">
+            <div class="product-img">👕</div>
+            <div class="product-info">
+              <div class="product-name">Camiseta Estampa</div>
+              <div class="product-tags">
+                <span class="tag brand">GeekWear</span>
+                <span class="tag">CE-015</span>
+              </div>
+              <div class="product-var">Branca / G</div>
+            </div>
+          </div>
+          <div class="product-bottom">
+            <span class="price">R$ 79,90</span>
+            <div>
+              <span class="stock-badge out">sem estoque</span>
+              <button class="add-btn" disabled>➕ Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="load-more">
+        <button>⬇ Carregar mais (4 de 20+)</button>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab">
+      🛒 <span>R$ 239,70</span>
+      <span class="fab-badge">2</span>
+    </button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="dot" style="background:#18181a"></span> <strong>O que mudou:</strong></div>
+  <div class="legend-item"><span class="dot" style="background:#18181a"></span> Abas "Produtos" | "Carrinho (N)" no topo</div>
+  <div class="legend-item"><span class="dot" style="background:#18181a"></span> Botão flutuante (FAB) com total + quantidade</div>
+  <div class="legend-item"><span class="dot" style="background:#18181a"></span> Input de busca com botão X pra limpar</div>
+  <div class="legend-item"><span class="dot" style="background:#18181a"></span> Categorias em scroll horizontal (não quebra linha)</div>
+  <div class="legend-item"><span class="dot" style="background:#18181a"></span> Confirmação vira Bottom Sheet (sobe de baixo)</div>
+</div>
+
+</body>
+</html>

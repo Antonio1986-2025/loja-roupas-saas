@@ -1,0 +1,1 @@
+SELECT id, descricao, valor::text, "dataVencimento"::text, status, categoria, "fornecedorId", observacoes, "entradaId" FROM contas_pagar WHERE "entradaId" = 'cmqr73t29000212729cbotu2a' ORDER BY "dataVencimento";

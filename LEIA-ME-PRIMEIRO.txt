@@ -1,0 +1,68 @@
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║          🏪 CALIFORNIA STORE - COMO RODAR                 ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+📋 PASSO A PASSO SIMPLES:
+
+1. ABRA O DOCKER DESKTOP
+   - Procure "Docker Desktop" no menu iniciar
+   - Clique para abrir
+   - Aguarde aparecer: "Docker Desktop is running"
+   ⏱️  Isso pode levar 1-2 minutos
+
+2. EXECUTE O ARQUIVO start.bat
+   - Dê dois cliques no arquivo "start.bat"
+   - Ele fará tudo automaticamente:
+     ✓ Subir banco de dados
+     ✓ Criar tabelas
+     ✓ Popular com dados
+     ✓ Iniciar servidor
+
+3. ABRA NO NAVEGADOR
+   - Acesse: http://localhost:3000
+   - Email: admin@demo.com
+   - Senha: admin123
+
+╔════════════════════════════════════════════════════════════╗
+║  PRONTO! É SÓ ISSO! 🎉                                    ║
+╚════════════════════════════════════════════════════════════╝
+
+
+❓ TEM PROBLEMAS?
+
+Se o Docker Desktop não abre:
+→ Leia: COMO-RODAR-LOCAL.md (Opção 2)
+→ Instale PostgreSQL manualmente
+
+Se aparecer erro "port 5432 already in use":
+→ Você já tem PostgreSQL rodando
+→ Veja COMO-RODAR-LOCAL.md seção "Problemas Comuns"
+
+Se aparecer erro "Prisma Client":
+→ Abra terminal aqui e execute: npx prisma generate
+
+
+📁 ARQUIVOS IMPORTANTES:
+
+LEIA-ME-PRIMEIRO.txt   ← Você está aqui!
+start.bat              ← Clique aqui para iniciar
+COMO-RODAR-LOCAL.md    ← Guia detalhado
+README.md              ← Documentação completa
+
+
+💡 DICA:
+
+Depois que rodar pela primeira vez, das próximas vezes é só:
+1. Abrir Docker Desktop
+2. Executar start.bat
+3. Pronto!
+
+
+═══════════════════════════════════════════════════════════
+
+Desenvolvido com ❤️ 
+California Store - ERP para Lojas de Roupas
+
+═══════════════════════════════════════════════════════════
