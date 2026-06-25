@@ -5,9 +5,21 @@ import type { Genero } from "@prisma/client";
 
 function converterUrlGoogleDrive(url: string | null): string | null {
   if (!url) return null;
-  const match = url.match(/\/file\/d\/([^\/]+)/);
-  if (match) {
-    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  // Extrai o ID do arquivo de qualquer formato de URL do Google Drive
+  let id: string | null = null;
+  let m = url.match(/[?&]id=([^&]+)/);
+  if (m) id = m[1];
+  if (!id) {
+    m = url.match(/\/file\/d\/([^\/]+)/);
+    if (m) id = m[1];
+  }
+  if (!id) {
+    m = url.match(/\/d\/([^=\/?]+)/);
+    if (m) id = m[1];
+  }
+  // Usa o CDN de imagens do Google (lh3) - confiavel para exibir em <img> e ja redimensionado
+  if (id) {
+    return `https://lh3.googleusercontent.com/d/${id}=w800`;
   }
   return url;
 }
