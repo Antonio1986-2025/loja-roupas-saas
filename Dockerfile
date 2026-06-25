@@ -25,6 +25,10 @@ COPY . .
 # Regenerate Prisma Client (in case schema changed during copy)
 RUN npx prisma generate
 
+# Run automated tests before building.
+# If any test fails, the Docker build fails and the deploy is blocked.
+RUN npm test
+
 # Build application
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
