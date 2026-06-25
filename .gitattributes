@@ -1,0 +1,4 @@
+# Forcar LF para shell scripts e Dockerfile (necessario para Linux containers)
+*.sh text eol=lf
+Dockerfile text eol=lf
+startup.sh text eol=lf
