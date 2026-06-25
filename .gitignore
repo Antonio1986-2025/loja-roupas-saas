@@ -35,3 +35,6 @@ next-env.d.ts
 
 # prisma
 # /prisma/migrations/**/migration.sql
+
+# fotos (upload separado no servidor)
+/public/fotos/
