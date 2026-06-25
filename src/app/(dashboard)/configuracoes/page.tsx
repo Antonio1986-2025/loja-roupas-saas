@@ -138,7 +138,7 @@ export default function ConfiguracoesPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2 space-y-2">
                   <Label htmlFor="nomeEmpresa">Nome da Empresa *</Label>
-                  <Input id="nomeEmpresa" name="nomeEmpresa" required placeholder="California Store" />
+                  <Input id="nomeEmpresa" name="nomeEmpresa" required placeholder="Nome da sua loja" />
                 </div>
 
                 <div className="space-y-2">

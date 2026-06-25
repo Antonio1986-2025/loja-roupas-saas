@@ -68,9 +68,9 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold">Criar minha loja</CardTitle>
+          <CardTitle className="text-3xl font-bold">Criar conta no <span className="text-primary">Stori</span></CardTitle>
           <CardDescription>
-            Comece grátis. Leva menos de um minuto.
+            Comece grátis. Comece grátis. Sem cartão de crédito..
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -141,7 +141,7 @@ export default function RegisterPage() {
               </div>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Criando..." : "Criar minha loja grátis"}
+              {loading ? "Criando..." : "Criar minha loja no Stori grátis"}
             </Button>
           </form>
           <p className="text-sm text-center text-muted-foreground mt-4">

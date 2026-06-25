@@ -45,9 +45,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold">California Store</CardTitle>
+          <CardTitle className="text-3xl font-bold">Stori</CardTitle>
           <CardDescription>
-            Sistema de gestão para lojas de roupas
+            Gestão simples para lojas que crescem
           </CardDescription>
         </CardHeader>
         <CardContent>

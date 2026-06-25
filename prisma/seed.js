@@ -61,7 +61,7 @@ async function main() {
     update: {},
     create: {
       tenantId: tenant.id,
-      nomeEmpresa: "Loja Demo California",
+      nomeEmpresa: "Loja Demo",
       telefone: "(11) 99999-9999",
       email: "contato@demo.com",
       cidade: "Sao Paulo",
