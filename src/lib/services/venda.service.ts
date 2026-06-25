@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { CreateVendaInput } from "@/lib/validations/venda";
+import { calcularSubtotal, calcularTotal, gerarContasReceberMultiplos } from "@/lib/calculations/venda";
 import type { FormaPagamento as FPEnum } from "@prisma/client";
 
 export class VendaError extends Error {
@@ -68,12 +69,9 @@ export async function criarVenda(
     });
     const numero = (ultima?.numero ?? 0) + 1;
 
-    const subtotal = itensData.reduce(
-      (acc, item) => acc.add(item.subtotal),
-      new Prisma.Decimal(0)
-    );
+    const subtotal = calcularSubtotal(itensData);
     const desconto = new Prisma.Decimal(data.desconto || 0);
-    const total = subtotal.sub(desconto);
+    const total = calcularTotal(subtotal, desconto);
 
     const pagamentosData = data.pagamentos && data.pagamentos.length > 0
       ? data.pagamentos.map((p) => ({
@@ -171,85 +169,6 @@ export async function criarVenda(
   });
 }
 
-function gerarContasReceberMultiplos(
-  pagamentos: { formaPagamento: FormaPagamento; valor: Prisma.Decimal }[],
-  _total: Prisma.Decimal,
-  venda: { id: string; clienteId: string | null; numero: number },
-  tenantId: string
-) {
-  const hoje = new Date();
-  const resultado: {
-    descricao: string;
-    valor: Prisma.Decimal;
-    dataVencimento: Date;
-    dataRecebimento?: Date;
-    status: "PENDENTE" | "PAGO";
-    categoria: "VENDA";
-    formaPagamento: FormaPagamento;
-    clienteId: string | null;
-    vendaId: string;
-    observacoes: string;
-    tenantId: string;
-  }[] = [];
-
-  for (const pag of pagamentos) {
-    if (pag.formaPagamento === "DINHEIRO" || pag.formaPagamento === "PIX" || pag.formaPagamento === "CREDITO_LOJA") continue;
-
-    if (pag.formaPagamento === "DEBITO") {
-      resultado.push({
-        descricao: `Venda #${venda.numero} - Débito`,
-        valor: pag.valor,
-        dataVencimento: hoje,
-        dataRecebimento: hoje,
-        status: "PAGO",
-        categoria: "VENDA",
-        formaPagamento: "DEBITO",
-        clienteId: venda.clienteId,
-        vendaId: venda.id,
-        observacoes: `Venda #${venda.numero} - Débito`,
-        tenantId,
-      });
-      continue;
-    }
-
-    if (pag.formaPagamento === "CREDITO") {
-      const vencimento = new Date(hoje);
-      vencimento.setDate(vencimento.getDate() + 30);
-      resultado.push({
-        descricao: `Venda #${venda.numero} - Crédito`,
-        valor: pag.valor,
-        dataVencimento: vencimento,
-        status: "PENDENTE",
-        categoria: "VENDA",
-        formaPagamento: "CREDITO",
-        clienteId: venda.clienteId,
-        vendaId: venda.id,
-        observacoes: `Venda #${venda.numero} - Crédito 30 dias`,
-        tenantId,
-      });
-      continue;
-    }
-
-    if (pag.formaPagamento === "BOLETO") {
-      const vencimento = new Date(hoje);
-      vencimento.setDate(vencimento.getDate() + 3);
-      resultado.push({
-        descricao: `Venda #${venda.numero} - Boleto`,
-        valor: pag.valor,
-        dataVencimento: vencimento,
-        status: "PENDENTE",
-        categoria: "VENDA",
-        formaPagamento: "BOLETO",
-        clienteId: venda.clienteId,
-        vendaId: venda.id,
-        observacoes: `Venda #${venda.numero} - Boleto 3 dias`,
-        tenantId,
-      });
-    }
-  }
-
-  return resultado;
-}
 
 export async function listarVendas(tenantId: string, limit = 50) {
   return prisma.venda.findMany({
