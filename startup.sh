@@ -1,13 +1,41 @@
 #!/bin/sh
 set -e
 
+# Verificar se DATABASE_URL esta configurada antes de tentar qualquer coisa
+if [ -z "$DATABASE_URL" ]; then
+  echo ""
+  echo "================================================================"
+  echo "ERRO DE CONFIGURACAO: DATABASE_URL nao esta definida!"
+  echo "================================================================"
+  echo ""
+  echo "Configure a variavel DATABASE_URL nas Environment Variables do"
+  echo "seu app no Easypanel (NAO no servico do banco - no APP)."
+  echo ""
+  echo "Formato esperado:"
+  echo "DATABASE_URL=postgresql://usuario:senha@host:5432/banco?sslmode=disable"
+  echo ""
+  echo "Tambem certifique-se de configurar:"
+  echo "  - NEXTAUTH_URL=https://seu-dominio"
+  echo "  - NEXTAUTH_SECRET=alguma-chave-secreta"
+  echo "  - NODE_ENV=production"
+  echo ""
+  echo "Apos configurar, faca REBUILD do app."
+  echo "================================================================"
+  echo ""
+  # Sai com erro para o container parar (em vez de loop infinito)
+  exit 1
+fi
+
+if [ -z "$NEXTAUTH_SECRET" ]; then
+  echo "AVISO: NEXTAUTH_SECRET nao definida - login pode nao funcionar"
+fi
+
 echo "=> Running database migrations..."
 npx prisma@5.22.0 db push --accept-data-loss --skip-generate
 
 echo "=> Checking if database needs seeding..."
 
 # Tentar contar usuarios. Se falhar ou retornar 0, roda seed.
-# Usamos node + prisma client (ja disponivel no container) para checar
 NEEDS_SEED=$(node -e "
 const { PrismaClient } = require('@prisma/client');
 const p = new PrismaClient();
