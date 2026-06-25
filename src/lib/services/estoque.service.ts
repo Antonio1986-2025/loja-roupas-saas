@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { Genero } from "@prisma/client";
+import { calcularSituacaoEstoque, calcularAjusteEstoque, calcularValorEstoque, calcularTotalUnidades } from "@/lib/calculations/estoque";
 
 export class EstoqueError extends Error {
   code: string;
@@ -80,11 +81,7 @@ export async function listarEstoque(tenantId: string, filtros: ListarFiltros) {
     qtdCondicional: v.qtdCondicional,
     estoqueMinimo: v.estoqueMinimo,
     precoVenda: v.precoVenda ? Number(v.precoVenda) : Number(v.produto.precoVenda),
-    situacao:
-      v.qtdEstoque === 0 ? "zerado" as const
-      : v.qtdEstoque <= v.estoqueMinimo ? "baixo" as const
-      : v.qtdEstoque > 50 ? "excesso" as const
-      : "normal" as const,
+    situacao: calcularSituacaoEstoque(v.qtdEstoque, v.estoqueMinimo),
   }));
 
   return { data, total, page, totalPages: Math.ceil(total / limit) };
@@ -122,8 +119,11 @@ export async function ajustarEstoque(
   }
 
   return prisma.$transaction(async (tx) => {
-    const diferenca = dados.quantidade - variante.qtdEstoque;
-    const qtdDisponivelNova = Math.max(0, variante.qtdDisponivel + diferenca);
+    const { diferenca, qtdDisponivelNova } = calcularAjusteEstoque(
+      variante.qtdEstoque,
+      variante.qtdDisponivel,
+      dados.quantidade
+    );
 
     await tx.produtoVariante.update({
       where: { id: varianteId },
@@ -183,10 +183,12 @@ export async function obterResumo(tenantId: string) {
     },
   });
 
-  const totalUnidades = variantes.reduce((s, v) => s + v.qtdEstoque, 0);
-  const valorTotal = variantes.reduce(
-    (s, v) => s + (Number(v.precoVenda || v.produto.precoVenda) * v.qtdEstoque),
-    0
+  const totalUnidades = calcularTotalUnidades(variantes);
+  const valorTotal = calcularValorEstoque(
+    variantes.map((v) => ({
+      qtdEstoque: v.qtdEstoque,
+      precoVenda: Number(v.precoVenda || v.produto.precoVenda),
+    }))
   );
   const totalBaixo = variantes.filter(
     (v) => v.qtdEstoque > 0 && v.qtdEstoque <= v.estoqueMinimo
