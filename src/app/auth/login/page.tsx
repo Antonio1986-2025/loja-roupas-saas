@@ -34,7 +34,7 @@ export default function LoginPage() {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (err) {
+    } catch {
       setError("Erro ao fazer login. Tente novamente.");
     } finally {
       setLoading(false);
@@ -85,6 +85,15 @@ export default function LoginPage() {
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
+          <p className="text-sm text-center text-muted-foreground mt-4">
+            Ainda não tem conta?{" "}
+            <Link
+              href="/auth/register"
+              className="text-primary font-medium hover:underline"
+            >
+              Criar minha loja grátis
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>
