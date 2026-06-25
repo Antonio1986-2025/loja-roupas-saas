@@ -863,7 +863,7 @@ export default function PdvPage() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-5 gap-1">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1">
                 {FORMAS_PAGAMENTO.map((f) => (
                   <Button
                     key={f.value}
