@@ -1,28 +1,10 @@
 import prisma from "@/lib/prisma";
+import { converterUrlGoogleDrive } from "@/lib/google-drive";
 import { parse } from "csv-parse/sync";
 import fs from "fs";
 import type { Genero } from "@prisma/client";
 
-function converterUrlGoogleDrive(url: string | null): string | null {
-  if (!url) return null;
-  // Extrai o ID do arquivo de qualquer formato de URL do Google Drive
-  let id: string | null = null;
-  let m = url.match(/[?&]id=([^&]+)/);
-  if (m) id = m[1];
-  if (!id) {
-    m = url.match(/\/file\/d\/([^\/]+)/);
-    if (m) id = m[1];
-  }
-  if (!id) {
-    m = url.match(/\/d\/([^=\/?]+)/);
-    if (m) id = m[1];
-  }
-  // Usa o CDN de imagens do Google (lh3) - confiavel para exibir em <img> e ja redimensionado
-  if (id) {
-    return `https://lh3.googleusercontent.com/d/${id}=w800`;
-  }
-  return url;
-}
+
 
 interface ImportRow {
   codigo_interno: string;
