@@ -1,4 +1,5 @@
 "use client";
+import { fotoUrl as gdFotoUrl } from "@/lib/google-drive";
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -228,7 +229,7 @@ export default function EditarProdutoPage() {
                   <Label>Foto do Produto</Label>
                   <div className="flex items-center gap-4">
                     {(previewUrl || fotoUrl) && (
-                      <img src={previewUrl || fotoUrl} alt="Preview" className="w-20 h-20 object-cover rounded-md border" />
+                      <img src={previewUrl || gdFotoUrl(fotoUrl, "full") || fotoUrl} alt="Preview" className="w-20 h-20 object-cover rounded-md border" />
                     )}
                     <div className="flex-1">
                       <Input

@@ -40,3 +40,33 @@ export function converterUrlGoogleDrive(
   }
   return url;
 }
+
+/**
+ * Retorna a URL da foto no tamanho certo para cada contexto:
+ * - "thumb"  → w200  (listas, cards, PDV, condicional) ~12KB
+ * - "medium" → w400  (grids maiores, banners)          ~45KB
+ * - "full"   → w800  (detalhe do produto)              ~150KB
+ *
+ * Para URLs que nao sao do Google Drive (ex: upload local /fotos/*.webp),
+ * retorna a URL original sem modificacao.
+ */
+export type TamanhoFoto = "thumb" | "medium" | "full";
+
+const LARGURAS: Record<TamanhoFoto, number> = {
+  thumb: 200,
+  medium: 400,
+  full: 800,
+};
+
+export function fotoUrl(
+  url: string | null | undefined,
+  tamanho: TamanhoFoto = "thumb"
+): string | null {
+  if (!url) return null;
+  const id = extrairIdGoogleDrive(url);
+  if (id) {
+    return `https://lh3.googleusercontent.com/d/${id}=w${LARGURAS[tamanho]}`;
+  }
+  // URL local (/fotos/*.webp) ou externa desconhecida — retorna sem modificar
+  return url;
+}

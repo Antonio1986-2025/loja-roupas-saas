@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { fotoUrl } from "@/lib/google-drive";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
       marca: v.produto.marca,
       codigoInterno: v.produto.codigoInterno,
       genero: v.produto.genero,
-      fotoUrl: v.produto.fotoUrl,
+      fotoUrl: fotoUrl(v.produto.fotoUrl, "thumb"),
     }));
 
     return NextResponse.json({ data, total, page, totalPages: Math.ceil(total / limit) });

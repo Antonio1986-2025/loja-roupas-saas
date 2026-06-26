@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { fotoUrl } from "@/lib/google-drive";
 import type { Genero } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
         genero: p.genero,
         precoVenda: Number(p.precoVenda),
         precoCusto: p.precoCusto ? Number(p.precoCusto) : null,
-        fotoUrl: p.fotoUrl,
+        fotoUrl: fotoUrl(p.fotoUrl, "thumb"),
         ativo: p.ativo,
         categoria: p.categoria ? { nome: p.categoria.nome } : null,
         qtdVariantes: p.variantes.length,
