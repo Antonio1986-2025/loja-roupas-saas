@@ -41,6 +41,7 @@ const FORMAS = [
   { v: "DEBITO", l: "Débito" },
   { v: "CREDITO", l: "Crédito" },
   { v: "BOLETO", l: "Boleto" },
+  { v: "DUPLICATA", l: "Duplicata" },
 ];
 
 export function CondicionalDetalhe({ condicional }: { condicional: Condicional }) {

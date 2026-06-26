@@ -318,6 +318,7 @@ enum FormaPagamento {
   PIX
   BOLETO
   CREDITO_LOJA
+  DUPLICATA
 }
 
 enum StatusVenda {

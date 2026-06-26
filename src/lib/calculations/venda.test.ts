@@ -184,4 +184,35 @@ describe("gerarContasReceberMultiplos", () => {
     expect(r[0].vendaId).toBe("v1");
     expect(r[0].tenantId).toBe("t1");
   });
+
+  it("gera conta PENDENTE para DUPLICATA com vencimento em 30 dias", () => {
+    const hoje = new Date();
+    const r = gerarContasReceberMultiplos(
+      [{ formaPagamento: "DUPLICATA", valor: D(200) }],
+      D(200),
+      venda,
+      tenantId
+    );
+    expect(r.length).toBe(1);
+    expect(r[0].status).toBe("PENDENTE");
+    expect(r[0].formaPagamento).toBe("DUPLICATA");
+    const dias = Math.round(
+      (r[0].dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    expect(dias).toBe(30);
+  });
+
+  it("NAO gera conta para DUPLICATA junto com pagamentos a vista", () => {
+    const r = gerarContasReceberMultiplos(
+      [
+        { formaPagamento: "DINHEIRO", valor: D(50) },
+        { formaPagamento: "DUPLICATA", valor: D(150) },
+      ],
+      D(200),
+      venda,
+      tenantId
+    );
+    expect(r.length).toBe(1);
+    expect(r[0].formaPagamento).toBe("DUPLICATA");
+  });
 });

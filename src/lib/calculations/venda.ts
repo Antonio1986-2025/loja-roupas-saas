@@ -135,6 +135,23 @@ export function gerarContasReceberMultiplos(
         tenantId,
       });
     }
+
+    if (pag.formaPagamento === "DUPLICATA") {
+      const vencimento = new Date(hoje);
+      vencimento.setDate(vencimento.getDate() + 30);
+      resultado.push({
+        descricao: `Venda #${venda.numero} - Duplicata`,
+        valor: pag.valor,
+        dataVencimento: vencimento,
+        status: "PENDENTE",
+        categoria: "VENDA",
+        formaPagamento: "DUPLICATA",
+        clienteId: venda.clienteId,
+        vendaId: venda.id,
+        observacoes: `Venda #${venda.numero} - Duplicata 30 dias`,
+        tenantId,
+      });
+    }
   }
 
   return resultado;
