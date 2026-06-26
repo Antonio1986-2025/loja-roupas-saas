@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { RegistroInput } from "@/lib/validations/registro";
 import { gerarSlugBase, resolverSlugUnico } from "@/lib/calculations/registro";
+import { calcularFimTrial } from "@/lib/calculations/plano";
 
 export class RegistroError extends Error {
   code: string;
@@ -43,12 +44,15 @@ export async function registrarLoja(data: RegistroInput) {
 
   // 3. Criar loja + admin + configuracao
   const resultado = await prisma.$transaction(async (tx) => {
+    const trialEndsAt = calcularFimTrial(new Date());
+
     const tenant = await tx.tenant.create({
       data: {
         name: data.nomeLoja.trim(),
         slug,
         plan: "FREE",
         status: "ACTIVE",
+        trialEndsAt,
       },
     });
 
