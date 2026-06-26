@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -111,6 +112,43 @@ const menuItems = [
   },
 ];
 
+
+function SidebarLogo() {
+  const { data: session } = useSession();
+  const tenantName = session?.user?.tenantName ?? "Stori";
+  const [logoError, setLogoError] = useState(false);
+
+  // Buscar logo do tenant via API
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/tenant/logo")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.logo && setLogoUrl(d.logo))
+      .catch(() => {});
+  }, []);
+
+  if (logoUrl && !logoError) {
+    return (
+      <img
+        src={logoUrl}
+        alt={tenantName}
+        className="h-12 w-auto object-contain"
+        onError={() => setLogoError(true)}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-0.5">
+      <span className="text-[10px] text-muted-foreground uppercase tracking-widest opacity-50">
+        Stori
+      </span>
+      <h1 className="text-lg font-bold text-primary leading-tight">
+        {tenantName}
+      </h1>
+    </div>
+  );
+}
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const [vencidas, setVencidas] = useState(0);
@@ -125,7 +163,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex h-full w-64 flex-col bg-sidebar border-r">
       <div className="flex items-center justify-between p-6">
-        <h1 className="text-2xl font-bold text-primary">Stori</h1>
+        <SidebarLogo />
         {onClose && (
           <button onClick={onClose} className="md:hidden rounded-md p-1 hover:bg-sidebar-accent">
             <X className="h-5 w-5" />
