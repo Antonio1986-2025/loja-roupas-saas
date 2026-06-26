@@ -75,6 +75,8 @@ export function calcularStatusAcesso(tenant: {
     return { status: "TRIAL_VENCIDO", diasRestantesTrial: 0, emTrial: false, bloqueado: true };
   }
 
-  // Sem trial e sem assinatura (nao deveria acontecer, mas defensivo)
-  return { status: "TRIAL_VENCIDO", diasRestantesTrial: 0, emTrial: false, bloqueado: true };
+  // Sem trial e sem assinatura: loja criada antes do sistema de trial.
+  // Tratamos como ATIVA para nao bloquear lojas legadas.
+  // O admin deve configurar manualmente o trialEndsAt ou assinaturaAte.
+  return { status: "ATIVO", diasRestantesTrial: null, emTrial: false, bloqueado: false };
 }

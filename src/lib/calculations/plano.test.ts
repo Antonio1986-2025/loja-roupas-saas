@@ -100,4 +100,11 @@ describe("calcularStatusAcesso", () => {
     expect(r.status).toBe("CANCELADO");
     expect(r.bloqueado).toBe(true);
   });
+
+  it("ATIVO para loja legada sem trialEndsAt nem assinatura (nao bloqueia)", () => {
+    const r = calcularStatusAcesso({ status: "ACTIVE", trialEndsAt: null, assinaturaAte: null }, agora);
+    expect(r.status).toBe("ATIVO");
+    expect(r.bloqueado).toBe(false);
+    expect(r.emTrial).toBe(false);
+  });
 });
