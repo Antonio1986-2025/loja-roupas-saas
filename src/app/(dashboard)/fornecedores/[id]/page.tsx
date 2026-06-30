@@ -18,6 +18,30 @@ import {
 import { ArrowLeft, Loader2, Save, Trash2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
+type FormData = {
+  nome: string;
+  cnpj: string;
+  telefone: string;
+  email: string;
+  endereco: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  observacoes: string;
+};
+
+const FORM_VAZIO: FormData = {
+  nome: "",
+  cnpj: "",
+  telefone: "",
+  email: "",
+  endereco: "",
+  cidade: "",
+  estado: "",
+  cep: "",
+  observacoes: "",
+};
+
 export default function EditarFornecedorPage() {
   const router = useRouter();
   const params = useParams();
@@ -27,6 +51,7 @@ export default function EditarFornecedorPage() {
   const [dialogDeleteOpen, setDialogDeleteOpen] = useState(false);
   const [erroDelete, setErroDelete] = useState("");
   const [erro, setErro] = useState("");
+  const [form, setForm] = useState<FormData>(FORM_VAZIO);
 
   useEffect(() => {
     async function carregar() {
@@ -37,18 +62,17 @@ export default function EditarFornecedorPage() {
           return;
         }
         const data = await res.json();
-        const form = document.forms.namedItem("formFornecedor") as HTMLFormElement;
-        if (form) {
-          (form.elements.namedItem("nome") as HTMLInputElement).value = data.nome;
-          (form.elements.namedItem("cnpj") as HTMLInputElement).value = data.cnpj || "";
-          (form.elements.namedItem("telefone") as HTMLInputElement).value = data.telefone || "";
-          (form.elements.namedItem("email") as HTMLInputElement).value = data.email || "";
-          (form.elements.namedItem("endereco") as HTMLInputElement).value = data.endereco || "";
-          (form.elements.namedItem("cidade") as HTMLInputElement).value = data.cidade || "";
-          (form.elements.namedItem("estado") as HTMLInputElement).value = data.estado || "";
-          (form.elements.namedItem("cep") as HTMLInputElement).value = data.cep || "";
-          (form.elements.namedItem("observacoes") as HTMLTextAreaElement).value = data.observacoes || "";
-        }
+        setForm({
+          nome:        data.nome        ?? "",
+          cnpj:        data.cnpj        ?? "",
+          telefone:    data.telefone    ?? "",
+          email:       data.email       ?? "",
+          endereco:    data.endereco    ?? "",
+          cidade:      data.cidade      ?? "",
+          estado:      data.estado      ?? "",
+          cep:         data.cep         ?? "",
+          observacoes: data.observacoes ?? "",
+        });
       } catch {
         router.push("/fornecedores");
       } finally {
@@ -58,29 +82,20 @@ export default function EditarFornecedorPage() {
     carregar();
   }, [params.id, router]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
     setSalvando(true);
-
-    const form = new FormData(e.currentTarget);
-    const data = {
-      nome: form.get("nome") as string,
-      cnpj: form.get("cnpj") as string,
-      telefone: form.get("telefone") as string,
-      email: form.get("email") as string,
-      endereco: form.get("endereco") as string,
-      cidade: form.get("cidade") as string,
-      estado: form.get("estado") as string,
-      cep: form.get("cep") as string,
-      observacoes: form.get("observacoes") as string,
-    };
 
     try {
       const res = await fetch(`/api/fornecedores/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(form),
       });
 
       if (!res.ok) {
@@ -177,7 +192,7 @@ export default function EditarFornecedorPage() {
         </Dialog>
       </div>
 
-      <form name="formFornecedor" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Informações do Fornecedor</CardTitle>
@@ -192,7 +207,7 @@ export default function EditarFornecedorPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="nome">Nome *</Label>
-                <Input id="nome" name="nome" required placeholder="Nome do fornecedor" />
+                <Input id="nome" name="nome" required value={form.nome} onChange={handleChange} placeholder="Nome do fornecedor" />
               </div>
 
               <div className="space-y-2">
@@ -200,6 +215,8 @@ export default function EditarFornecedorPage() {
                 <Input
                   id="cnpj"
                   name="cnpj"
+                  value={form.cnpj}
+                  onChange={handleChange}
                   placeholder="00.000.000/0000-00"
                 />
               </div>
@@ -209,6 +226,8 @@ export default function EditarFornecedorPage() {
                 <Input
                   id="telefone"
                   name="telefone"
+                  value={form.telefone}
+                  onChange={handleChange}
                   placeholder="(11) 99999-9999"
                 />
               </div>
@@ -219,6 +238,8 @@ export default function EditarFornecedorPage() {
                   id="email"
                   name="email"
                   type="email"
+                  value={form.email}
+                  onChange={handleChange}
                   placeholder="fornecedor@exemplo.com"
                 />
               </div>
@@ -228,23 +249,25 @@ export default function EditarFornecedorPage() {
                 <Input
                   id="endereco"
                   name="endereco"
+                  value={form.endereco}
+                  onChange={handleChange}
                   placeholder="Rua, número, bairro"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="cidade">Cidade</Label>
-                <Input id="cidade" name="cidade" placeholder="São Paulo" />
+                <Input id="cidade" name="cidade" value={form.cidade} onChange={handleChange} placeholder="São Paulo" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="estado">Estado</Label>
-                <Input id="estado" name="estado" placeholder="SP" />
+                <Input id="estado" name="estado" value={form.estado} onChange={handleChange} placeholder="SP" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="cep">CEP</Label>
-                <Input id="cep" name="cep" placeholder="00000-000" />
+                <Input id="cep" name="cep" value={form.cep} onChange={handleChange} placeholder="00000-000" />
               </div>
             </div>
 
@@ -253,6 +276,8 @@ export default function EditarFornecedorPage() {
               <textarea
                 id="observacoes"
                 name="observacoes"
+                value={form.observacoes}
+                onChange={handleChange}
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Informações adicionais..."
                 rows={3}

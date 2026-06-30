@@ -47,10 +47,17 @@ export async function criarVenda(
         throw new VendaError("VARIANTE_NAO_ENCONTRADA", "Produto não encontrado");
       }
 
-      if (variante.qtdEstoque < item.quantidade) {
+      if (variante.qtdDisponivel < item.quantidade) {
         throw new VendaError(
           "ESTOQUE_INSUFICIENTE",
-          `Estoque insuficiente para ${variante.produto.nome}`
+          `Estoque insuficiente para ${variante.produto.nome}. Disponível: ${variante.qtdDisponivel}`
+        );
+      }
+
+      if (variante.qtdDisponivel <= 0) {
+        throw new VendaError(
+          "SEM_ESTOQUE",
+          `${variante.produto.nome} está sem estoque disponível`
         );
       }
 

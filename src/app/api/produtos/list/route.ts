@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const categoriaId = url.searchParams.get("categoriaId") || "";
   const genero = url.searchParams.get("genero") || "";
   const estoqueBaixo = url.searchParams.get("estoqueBaixo") === "true";
+  const apenasComEstoque = url.searchParams.get("apenasComEstoque") === "true";
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 20));
   const skip = (page - 1) * limit;
@@ -32,6 +33,9 @@ export async function GET(req: NextRequest) {
   }
   if (categoriaId) where.categoriaId = categoriaId;
   if (genero) where.genero = genero as Genero;
+  if (apenasComEstoque) {
+    where.variantes = { some: { qtdEstoque: { gt: 0 } } };
+  }
 
   try {
     const [produtos, total] = await Promise.all([

@@ -68,13 +68,41 @@ export async function atualizarContaReceber(tenantId: string, id: string, data: 
   });
 }
 
-export async function receberConta(tenantId: string, id: string) {
+export async function receberConta(
+  tenantId: string,
+  id: string,
+  dados: {
+    dataPagamento: string;
+    valorPago: number;
+    juros?: number;
+    multa?: number;
+    desconto?: number;
+    formaPagamento?: string;
+    numeroDocumento?: string;
+    observacoes?: string;
+  }
+) {
   const existente = await prisma.contaReceber.findFirst({ where: { id, tenantId } });
   if (!existente) throw new ContaReceberError("NAO_ENCONTRADA", "Conta não encontrada");
+  if (existente.status === "PAGO") throw new ContaReceberError("JA_RECEBIDA", "Conta já foi recebida");
 
   await prisma.contaReceber.update({
     where: { id },
-    data: { status: "PAGO", dataRecebimento: new Date() },
+    data: {
+      status: "PAGO",
+      dataRecebimento: new Date(dados.dataPagamento),
+      valorRecebido: dados.valorPago,
+      juros: dados.juros ?? 0,
+      multa: dados.multa ?? 0,
+      desconto: dados.desconto ?? 0,
+      formaPagamento: (dados.formaPagamento as any) ?? existente.formaPagamento ?? null,
+      numeroDocumento: dados.numeroDocumento ?? null,
+      observacoes: dados.observacoes
+        ? (existente.observacoes
+            ? `${existente.observacoes}\n[Recebimento] ${dados.observacoes}`
+            : `[Recebimento] ${dados.observacoes}`)
+        : existente.observacoes,
+    },
   });
 }
 

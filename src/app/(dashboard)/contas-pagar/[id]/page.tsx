@@ -18,6 +18,24 @@ import {
 import { ArrowLeft, Loader2, Save, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
+type FormData = {
+  descricao: string;
+  valor: string;
+  dataVencimento: string;
+  categoria: string;
+  fornecedorId: string;
+  observacoes: string;
+};
+
+const FORM_VAZIO: FormData = {
+  descricao: "",
+  valor: "",
+  dataVencimento: "",
+  categoria: "OUTRO",
+  fornecedorId: "",
+  observacoes: "",
+};
+
 export default function EditarContaPagarPage() {
   const router = useRouter();
   const params = useParams();
@@ -29,6 +47,7 @@ export default function EditarContaPagarPage() {
   const [erro, setErro] = useState("");
   const [conta, setConta] = useState<any>(null);
   const [fornecedores, setFornecedores] = useState<any[]>([]);
+  const [form, setForm] = useState<FormData>(FORM_VAZIO);
 
   useEffect(() => {
     Promise.all([
@@ -38,33 +57,37 @@ export default function EditarContaPagarPage() {
       setFornecedores(fors || []);
       setConta(c);
       if (c) {
-        const form = document.forms.namedItem("formConta") as HTMLFormElement;
-        if (form) {
-          (form.elements.namedItem("descricao") as HTMLInputElement).value = c.descricao;
-          (form.elements.namedItem("valor") as HTMLInputElement).value = c.valor;
-          (form.elements.namedItem("dataVencimento") as HTMLInputElement).value = c.dataVencimento?.split("T")[0] || "";
-          (form.elements.namedItem("categoria") as HTMLSelectElement).value = c.categoria || "OUTRO";
-          (form.elements.namedItem("fornecedorId") as HTMLSelectElement).value = c.fornecedorId || "";
-          (form.elements.namedItem("observacoes") as HTMLTextAreaElement).value = c.observacoes || "";
-        }
+        setForm({
+          descricao:      c.descricao ?? "",
+          valor:          c.valor != null ? String(c.valor) : "",
+          dataVencimento: c.dataVencimento ? c.dataVencimento.split("T")[0] : "",
+          categoria:      c.categoria ?? "OUTRO",
+          fornecedorId:   c.fornecedorId ?? "",
+          observacoes:    c.observacoes ?? "",
+        });
       }
     }).catch(() => router.push("/contas-pagar"))
     .finally(() => setCarregando(false));
   }, [params.id, router]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
     setSalvando(true);
 
-    const form = new FormData(e.currentTarget);
     const data = {
-      descricao: form.get("descricao") as string,
-      valor: form.get("valor") as string,
-      dataVencimento: form.get("dataVencimento") as string,
-      categoria: form.get("categoria") as string,
-      fornecedorId: form.get("fornecedorId") as string,
-      observacoes: form.get("observacoes") as string,
+      descricao: form.descricao,
+      valor: form.valor,
+      dataVencimento: form.dataVencimento,
+      categoria: form.categoria,
+      fornecedorId: form.fornecedorId,
+      observacoes: form.observacoes,
     };
 
     try {
@@ -160,7 +183,7 @@ export default function EditarContaPagarPage() {
         </div>
       </div>
 
-      <form name="formConta" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader><CardTitle>Informações da Conta</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -169,19 +192,19 @@ export default function EditarContaPagarPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="descricao">Descrição *</Label>
-                <Input id="descricao" name="descricao" required placeholder="Ex: Aluguel" />
+                <Input id="descricao" name="descricao" required value={form.descricao} onChange={handleChange} placeholder="Ex: Aluguel" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="valor">Valor *</Label>
-                <Input id="valor" name="valor" type="number" step="0.01" required />
+                <Input id="valor" name="valor" type="number" step="0.01" required value={form.valor} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="dataVencimento">Vencimento *</Label>
-                <Input id="dataVencimento" name="dataVencimento" type="date" required />
+                <Input id="dataVencimento" name="dataVencimento" type="date" required value={form.dataVencimento} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="categoria">Categoria</Label>
-                <select id="categoria" name="categoria" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select id="categoria" name="categoria" value={form.categoria} onChange={handleChange} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="OUTRO">Outro</option>
                   <option value="ALUGUEL">Aluguel</option>
                   <option value="AGUA">Água</option>
@@ -196,14 +219,14 @@ export default function EditarContaPagarPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fornecedorId">Fornecedor</Label>
-                <select id="fornecedorId" name="fornecedorId" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select id="fornecedorId" name="fornecedorId" value={form.fornecedorId} onChange={handleChange} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="">Nenhum</option>
                   {fornecedores.map((f) => (<option key={f.id} value={f.id}>{f.nome}</option>))}
                 </select>
               </div>
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="observacoes">Observações</Label>
-                <textarea id="observacoes" name="observacoes" className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" rows={3} />
+                <textarea id="observacoes" name="observacoes" value={form.observacoes} onChange={handleChange} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" rows={3} />
               </div>
             </div>
 

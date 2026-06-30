@@ -190,6 +190,10 @@ export async function obterResumo(tenantId: string) {
       precoVenda: Number(v.precoVenda || v.produto.precoVenda),
     }))
   );
+  const valorCusto = variantes.reduce((acc, v) => {
+    const custo = Number(v.produto.precoCusto ?? 0);
+    return acc + custo * v.qtdEstoque;
+  }, 0);
   const totalBaixo = variantes.filter(
     (v) => v.qtdEstoque > 0 && v.qtdEstoque <= v.estoqueMinimo
   ).length;
@@ -205,6 +209,7 @@ export async function obterResumo(tenantId: string) {
   return {
     totalUnidades,
     valorTotal,
+    valorCusto,
     totalVariantes: variantes.length,
     totalBaixo,
     totalZerado,

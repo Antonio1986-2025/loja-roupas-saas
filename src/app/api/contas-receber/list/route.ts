@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const q = url.searchParams.get("q")?.trim() || "";
   const status = url.searchParams.get("status") || "";
   const categoria = url.searchParams.get("categoria") || "";
+  const clienteId = url.searchParams.get("clienteId") || "";
   const formaPagamento = url.searchParams.get("formaPagamento") || "";
   const startDate = url.searchParams.get("startDate") || "";
   const endDate = url.searchParams.get("endDate") || "";
@@ -23,20 +24,16 @@ export async function GET(req: NextRequest) {
   const where: any = { tenantId: session.user.tenantId };
 
   if (q) {
-    where.descricao = { contains: q, mode: "insensitive" };
+    where.OR = [
+      { descricao: { contains: q, mode: "insensitive" } },
+      { cliente: { nome: { contains: q, mode: "insensitive" } } },
+    ];
   }
 
-  if (status === "PENDENTE" || status === "PAGO") {
-    where.status = status;
-  }
-
-  if (categoria) {
-    where.categoria = categoria;
-  }
-
-  if (formaPagamento) {
-    where.formaPagamento = formaPagamento;
-  }
+  if (status === "PENDENTE" || status === "PAGO") where.status = status;
+  if (categoria) where.categoria = categoria;
+  if (clienteId) where.clienteId = clienteId;
+  if (formaPagamento) where.formaPagamento = formaPagamento;
 
   if (startDate || endDate) {
     where.dataVencimento = {};
@@ -64,6 +61,11 @@ export async function GET(req: NextRequest) {
       id: c.id,
       descricao: c.descricao,
       valor: Number(c.valor),
+      valorRecebido: c.valorRecebido ? Number(c.valorRecebido) : null,
+      juros: c.juros ? Number(c.juros) : null,
+      multa: c.multa ? Number(c.multa) : null,
+      desconto: c.desconto ? Number(c.desconto) : null,
+      numeroDocumento: c.numeroDocumento,
       dataVencimento: c.dataVencimento,
       dataRecebimento: c.dataRecebimento,
       status: c.status,

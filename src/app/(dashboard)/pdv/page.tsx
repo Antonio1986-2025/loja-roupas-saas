@@ -22,7 +22,9 @@ import {
   X,
   ImageIcon,
   ChevronDown,
+  QrCode,
 } from "lucide-react";
+import { QrCodeScanner } from "@/components/qrcode-scanner";
 
 type Cliente = { id: string; nome: string; telefone: string | null; cpf: string | null; creditoAtual?: number };
 type Variante = {
@@ -69,8 +71,10 @@ export default function PdvPage() {
   const [prodLoading, setProdLoading] = useState(false);
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [categorias, setCategorias] = useState<{ id: string; nome: string }[]>([]);
+  const [apenasComEstoquePdv, setApenasComEstoquePdv] = useState(true);
   const [itens, setItens] = useState<ItemCarrinho[]>([]);
   const [painelAtivo, setPainelAtivo] = useState<"produtos" | "carrinho">("produtos");
+  const [mostrarScanner, setMostrarScanner] = useState(false);
 
   const [clienteBusca, setClienteBusca] = useState("");
   const [clientesResult, setClientesResult] = useState<Cliente[]>([]);
@@ -109,6 +113,7 @@ export default function PdvPage() {
       try {
         const params = new URLSearchParams({ q: prodBusca, page: "1", limit: "20" });
         if (categoriaFiltro) params.set("categoriaId", categoriaFiltro);
+        if (apenasComEstoquePdv) params.set("apenasComEstoque", "true");
         const res = await fetch(`/api/produtos/search?${params}`);
         if (res.ok) {
           const json = await res.json();
@@ -120,7 +125,7 @@ export default function PdvPage() {
       }
     }, 200);
     return () => clearTimeout(t);
-  }, [prodBusca, categoriaFiltro]);
+  }, [prodBusca, categoriaFiltro, apenasComEstoquePdv]);
 
   const carregarMais = useCallback(async () => {
     const nextPage = prodPage + 1;
@@ -129,6 +134,7 @@ export default function PdvPage() {
     try {
       const params = new URLSearchParams({ q: prodBusca, page: String(nextPage), limit: "20" });
       if (categoriaFiltro) params.set("categoriaId", categoriaFiltro);
+      if (apenasComEstoquePdv) params.set("apenasComEstoque", "true");
       const res = await fetch(`/api/produtos/search?${params}`);
       if (res.ok) {
         const json = await res.json();
@@ -224,6 +230,26 @@ export default function PdvPage() {
     } else if (lista.length === 1) {
       addItem(lista[0]);
       setProdBusca("");
+    }
+  }, [addItem]);
+
+  // Chamado pelo QrCodeScanner — busca o produto e fecha o scanner se encontrar
+  const handleQrScan = useCallback(async (codigo: string) => {
+    const res = await fetch(`/api/produtos/search?q=${encodeURIComponent(codigo)}&limit=100`);
+    if (!res.ok) return;
+    const json = await res.json();
+    const lista: Variante[] = json.data || json;
+    const match = lista.find((v) => v.codigoBarras === codigo) ?? (lista.length === 1 ? lista[0] : null);
+    if (match) {
+      addItem(match);
+      setMostrarScanner(false);
+      // Feedback: mostra o produto na busca brevemente
+      setProdBusca(match.nome);
+      setTimeout(() => setProdBusca(""), 2000);
+    } else {
+      // Produto não encontrado — coloca o código na busca para o operador ver
+      setProdBusca(codigo);
+      setMostrarScanner(false);
     }
   }, [addItem]);
 
@@ -422,6 +448,14 @@ export default function PdvPage() {
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] -m-6">
+      {/* Scanner de QR Code / Código de Barras */}
+      {mostrarScanner && (
+        <QrCodeScanner
+          onScan={handleQrScan}
+          onClose={() => setMostrarScanner(false)}
+        />
+      )}
+
       {isMobile && (
         <div className="flex md:hidden border-b bg-white shrink-0">
           <button
@@ -461,7 +495,7 @@ export default function PdvPage() {
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
             <Input
               ref={searchRef}
-              className="pl-10 pr-10 h-11 text-lg"
+              className="pl-10 pr-20 h-11 text-lg"
               placeholder="Buscar por nome, código..."
               value={prodBusca}
               onChange={(e) => setProdBusca(e.target.value)}
@@ -472,14 +506,23 @@ export default function PdvPage() {
               }}
               autoFocus
             />
-            {prodBusca && (
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {prodBusca && (
+                <button
+                  onClick={() => { setProdBusca(""); searchRef.current?.focus(); }}
+                  className="text-muted-foreground hover:text-foreground p-1"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
               <button
-                onClick={() => { setProdBusca(""); searchRef.current?.focus(); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setMostrarScanner(true)}
+                title="Ler QR Code / Código de Barras"
+                className="flex items-center justify-center h-9 w-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                <X className="h-4 w-4" />
+                <QrCode className="h-4 w-4" />
               </button>
-            )}
+            </div>
           </div>
         </div>
 
@@ -488,7 +531,7 @@ export default function PdvPage() {
             <div className={`flex gap-1.5 mb-3 pb-3 border-b ${isMobile ? "flex-nowrap overflow-x-auto overflow-y-hidden" : "flex-wrap"}`}>
               <button
                 onClick={() => setCategoriaFiltro("")}
-                className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+                className={`text-xs px-2.5 py-1 rounded-full transition-colors whitespace-nowrap ${
                   !categoriaFiltro
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-accent"
@@ -500,7 +543,7 @@ export default function PdvPage() {
                 <button
                   key={cat.id}
                   onClick={() => setCategoriaFiltro(cat.id)}
-                  className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+                  className={`text-xs px-2.5 py-1 rounded-full transition-colors whitespace-nowrap ${
                     categoriaFiltro === cat.id
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-accent"
@@ -509,6 +552,16 @@ export default function PdvPage() {
                   {cat.nome}
                 </button>
               ))}
+              <button
+                onClick={() => setApenasComEstoquePdv(!apenasComEstoquePdv)}
+                className={`text-xs px-2.5 py-1 rounded-full transition-colors whitespace-nowrap ml-auto ${
+                  apenasComEstoquePdv
+                    ? "bg-green-600 text-white"
+                    : "bg-muted text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                ✅ Com estoque
+              </button>
             </div>
           )}
 
@@ -520,74 +573,72 @@ export default function PdvPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {/* Lista de produtos */}
+              <div className="divide-y rounded-lg border bg-white overflow-hidden">
                 {prodResult.map((v) => (
                   <div
                     key={v.id}
-                    className={`rounded-lg border p-3 transition-all bg-white ${
+                    className={`flex items-center gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors ${
                       v.qtdDisponivel <= 0 ? "opacity-40" : ""
                     }`}
                   >
-                    <div className="flex gap-3">
-                      {v.fotoUrl ? (
-                        <FotoModal src={v.fotoUrl} alt={v.nome}>
-                          <div className="w-16 h-16 rounded-md overflow-hidden bg-muted shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                            <img
-                              src={v.fotoUrl}
-                              alt={v.nome}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                        </FotoModal>
-                      ) : (
-                        <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center shrink-0">
-                          <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+                    {/* Foto pequena */}
+                    {v.fotoUrl ? (
+                      <FotoModal src={v.fotoUrl} alt={v.nome}>
+                        <div className="w-10 h-10 rounded-md overflow-hidden bg-muted shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                          <img src={v.fotoUrl} alt={v.nome} className="w-full h-full object-cover" loading="lazy" />
                         </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-sm truncate">{v.nome}</div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {v.marca && (
-                            <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                              {v.marca}
-                            </span>
-                          )}
-                          {v.codigoInterno && (
-                            <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-                              {v.codigoInterno}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {[v.cor, v.tamanho, v.genero].filter(Boolean).join(" / ") || "—"}
-                        </div>
+                      </FotoModal>
+                    ) : (
+                      <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground/40" />
+                      </div>
+                    )}
+
+                    {/* Dados do produto */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium text-sm truncate">{v.nome}</span>
+                        {v.marca && (
+                          <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
+                            {v.marca}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-muted-foreground">
+                          {[v.cor, v.tamanho, v.genero].filter(Boolean).join(" · ") || "—"}
+                        </span>
+                        {v.codigoInterno && (
+                          <span className="text-[10px] font-mono text-muted-foreground/70">
+                            {v.codigoInterno}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                      <span className="text-base font-bold text-primary">
-                        {formatCurrency(v.preco)}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={v.qtdDisponivel > 0 ? "secondary" : "destructive"} className="text-[10px]">
+
+                    {/* Preço + estoque + botão — lado direito */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <p className="font-bold text-sm text-primary">{formatCurrency(v.preco)}</p>
+                        <p className={`text-[10px] ${v.qtdDisponivel > 0 ? "text-muted-foreground" : "text-destructive font-medium"}`}>
                           {v.qtdDisponivel > 0 ? `${v.qtdDisponivel} disp` : "sem estoque"}
-                        </Badge>
-                        <button
-                          onClick={() => addItem(v)}
-                          disabled={v.qtdDisponivel <= 0}
-                          className="inline-flex items-center gap-1 text-xs font-medium rounded-md bg-primary text-primary-foreground px-2.5 py-1 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Plus className="h-3 w-3" />
-                          Add
-                        </button>
+                        </p>
                       </div>
+                      <button
+                        onClick={() => addItem(v)}
+                        disabled={v.qtdDisponivel <= 0}
+                        className="h-8 w-8 flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
 
               {prodPage < prodTotalPages && (
-                <div className="flex justify-center mt-6">
+                <div className="flex justify-center mt-4">
                   <Button
                     variant="outline"
                     size="sm"

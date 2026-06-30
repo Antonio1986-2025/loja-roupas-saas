@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const q = url.searchParams.get("q")?.trim() || "";
   const categoriaId = url.searchParams.get("categoriaId") || "";
+  const apenasComEstoque = url.searchParams.get("apenasComEstoque") === "true";
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 20));
   const skip = (page - 1) * limit;
@@ -29,6 +30,9 @@ export async function GET(req: NextRequest) {
   }
   if (categoriaId) {
     searchWhere.produto = { ...searchWhere.produto, categoriaId };
+  }
+  if (apenasComEstoque) {
+    searchWhere.qtdDisponivel = { gt: 0 };
   }
 
   try {

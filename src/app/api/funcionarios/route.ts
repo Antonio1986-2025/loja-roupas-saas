@@ -7,14 +7,27 @@ import {
   FuncionarioError,
 } from "@/lib/services/funcionario.service";
 import { createFuncionarioSchema } from "@/lib/validations/funcionario";
+import prisma from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "NAO_AUTENTICADO" }, { status: 401 });
   }
 
   try {
+    // Optional filter: only funcionarios without a linked user
+    const semUsuario = req.nextUrl.searchParams.get("sem-usuario") === "true";
+
+    if (semUsuario) {
+      const funcionarios = await prisma.funcionario.findMany({
+        where: { tenantId: session.user.tenantId, userId: null },
+        select: { id: true, nome: true, cargo: true },
+        orderBy: { nome: "asc" },
+      });
+      return NextResponse.json(funcionarios);
+    }
+
     const funcionarios = await listarFuncionarios(session.user.tenantId);
     return NextResponse.json(funcionarios);
   } catch (error) {

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { canAccess } from "@/lib/roles";
 import {
   LayoutDashboard,
   Package,
@@ -21,6 +22,7 @@ import {
   ArrowUpCircle,
   DollarSign,
   Truck,
+  ShieldCheck,
   X,
 } from "lucide-react";
 
@@ -51,6 +53,11 @@ const menuItems = [
     icon: Warehouse,
   },
   {
+    title: "Etiquetas",
+    href: "/etiquetas",
+    icon: Tag,
+  },
+  {
     title: "Entrada de Mercadorias",
     href: "/entradas",
     icon: Truck,
@@ -66,6 +73,11 @@ const menuItems = [
     icon: TrendingUp,
   },
   {
+    title: "Orçamentos",
+    href: "/orcamentos",
+    icon: FileText,
+  },
+  {
     title: "Condicionais",
     href: "/condicionais",
     icon: FileText,
@@ -79,6 +91,11 @@ const menuItems = [
     title: "Funcionários",
     href: "/funcionarios",
     icon: UserCircle,
+  },
+  {
+    title: "Usuários",
+    href: "/usuarios",
+    icon: ShieldCheck,
   },
   {
     title: "Contas a Pagar",
@@ -112,13 +129,11 @@ const menuItems = [
   },
 ];
 
-
 function SidebarLogo() {
   const { data: session } = useSession();
   const tenantName = session?.user?.tenantName ?? "Stori";
   const [logoError, setLogoError] = useState(false);
 
-  // Buscar logo do tenant via API
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   useEffect(() => {
     fetch("/api/tenant/logo")
@@ -149,9 +164,22 @@ function SidebarLogo() {
     </div>
   );
 }
+
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [vencidas, setVencidas] = useState(0);
+
+  const userRole = session?.user?.role ?? "USER";
+
+  // Filter menu items by role permissions
+  const visibleItems = menuItems.filter((item) => {
+    // "Usuários" only for ADMIN or MANAGER
+    if (item.href === "/usuarios" && !["ADMIN", "MANAGER"].includes(userRole)) {
+      return false;
+    }
+    return canAccess(userRole, item.href);
+  });
 
   useEffect(() => {
     fetch("/api/condicionais/alertas")
@@ -170,8 +198,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
           </button>
         )}
       </div>
-      <nav className="flex-1 space-y-1 px-3">
-        {menuItems.map((item) => {
+      <nav className="flex-1 space-y-1 px-3 overflow-y-auto">
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
           const showBadge = item.href === "/condicionais" && vencidas > 0;

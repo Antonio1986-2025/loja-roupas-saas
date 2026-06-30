@@ -38,6 +38,7 @@ model Tenant {
   movimentacoesCaixa MovimentacaoCaixa[]
   entradasMercadoria EntradaMercadoria[]
   caixas             Caixa[]
+  orcamentos         Orcamento[]
 
   @@index([slug])
   @@map("tenants")
@@ -71,6 +72,8 @@ model User {
   vendas        Venda[]
   caixas              Caixa[]
   movimentosCaixa     CaixaMovimento[]
+  orcamentos          Orcamento[]
+  funcionario         Funcionario?
 
   @@index([tenantId])
   @@index([email])
@@ -81,6 +84,10 @@ enum UserRole {
   ADMIN
   MANAGER
   USER
+  VENDEDOR
+  CAIXA
+  ESTOQUISTA
+  FINANCEIRO
 }
 
 // ============================================
@@ -162,6 +169,7 @@ model ProdutoVariante {
   condicionalItens      VendaCondicionalItem[]
   movimentacoes         MovimentacaoEstoque[]
   entradasMercadoria    EntradaMercadoriaItem[]
+  orcamentoItens        OrcamentoItem[]
 
   @@index([produtoId])
   @@index([codigoBarras])
@@ -215,6 +223,7 @@ model Cliente {
   vendas          Venda[]
   vendasCondicionais VendaCondicional[]
   contasReceber   ContaReceber[]
+  orcamentos      Orcamento[]
 
   @@index([tenantId])
   @@unique([tenantId, cpf])
@@ -264,6 +273,8 @@ model Funcionario {
   updatedAt   DateTime @updatedAt
 
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String?  @unique
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@unique([tenantId, cpf])
@@ -301,6 +312,7 @@ model Venda {
   caixa           Caixa?      @relation(fields: [caixaId], references: [id], onDelete: SetNull)
   movimentosCaixa CaixaMovimento[]
   origemCondicional VendaCondicional? @relation("VendaDeCondicional", fields: [origemCondicionalId], references: [id])
+  origemOrcamento   Orcamento?        @relation("VendaDeOrcamento")
 
   @@unique([tenantId, numero])
   @@index([tenantId])
@@ -537,8 +549,14 @@ model ContaPagar {
   id             String             @id @default(cuid())
   descricao      String
   valor          Decimal            @db.Decimal(10, 2)
+  valorPago      Decimal?           @db.Decimal(10, 2)
+  juros          Decimal?           @db.Decimal(10, 2)
+  multa          Decimal?           @db.Decimal(10, 2)
+  desconto       Decimal?           @db.Decimal(10, 2)
   dataVencimento DateTime
   dataPagamento  DateTime?
+  formaPagamento FormaPagamento?
+  numeroDocumento String?           @db.VarChar(100)
   status         StatusConta        @default(PENDENTE)
   categoria      CategoriaContaPagar @default(OUTRO)
   fornecedorId   String?
@@ -562,11 +580,16 @@ model ContaReceber {
   id               String                @id @default(cuid())
   descricao        String
   valor            Decimal               @db.Decimal(10, 2)
+  valorRecebido    Decimal?              @db.Decimal(10, 2)
+  juros            Decimal?              @db.Decimal(10, 2)
+  multa            Decimal?              @db.Decimal(10, 2)
+  desconto         Decimal?              @db.Decimal(10, 2)
   dataVencimento   DateTime
   dataRecebimento  DateTime?
   status           StatusConta           @default(PENDENTE)
   categoria        CategoriaContaReceber @default(CLIENTE)
   formaPagamento   FormaPagamento?
+  numeroDocumento  String?               @db.VarChar(100)
   clienteId        String?
   vendaId          String?
   observacoes      String?
@@ -703,4 +726,64 @@ model Configuracao {
   tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("configuracoes")
+}
+
+// ============================================
+// ORÇAMENTO / PRÉ-VENDA
+// ============================================
+
+model Orcamento {
+  id            String          @id @default(cuid())
+  numero        Int
+  clienteId     String?
+  vendedorId    String
+  status        StatusOrcamento @default(ABERTO)
+  validadeDias  Int             @default(7)
+  dataValidade  DateTime
+  subtotal      Decimal         @db.Decimal(10, 2)
+  desconto      Decimal         @default(0) @db.Decimal(10, 2)
+  total         Decimal         @db.Decimal(10, 2)
+  formaPagamento FormaPagamento?
+  observacoes   String?
+  vendaId       String?         @unique
+  tenantId      String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cliente       Cliente?        @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  vendedor      User            @relation(fields: [vendedorId], references: [id])
+  itens         OrcamentoItem[]
+  vendaGerada   Venda?          @relation("VendaDeOrcamento", fields: [vendaId], references: [id])
+
+  @@unique([tenantId, numero])
+  @@index([tenantId])
+  @@index([clienteId])
+  @@index([status])
+  @@index([dataValidade])
+  @@map("orcamentos")
+}
+
+enum StatusOrcamento {
+  ABERTO
+  CONVERTIDO
+  CANCELADO
+  EXPIRADO
+}
+
+model OrcamentoItem {
+  id          String   @id @default(cuid())
+  orcamentoId String
+  varianteId  String
+  quantidade  Int
+  precoUnit   Decimal  @db.Decimal(10, 2)
+  desconto    Decimal  @default(0) @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(10, 2)
+
+  orcamento   Orcamento       @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
+  variante    ProdutoVariante @relation(fields: [varianteId], references: [id])
+
+  @@index([orcamentoId])
+  @@index([varianteId])
+  @@map("orcamento_itens")
 }
