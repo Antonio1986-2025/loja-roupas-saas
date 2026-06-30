@@ -20,12 +20,22 @@ async function getDashboardData(tenantId: string) {
   hoje.setHours(0, 0, 0, 0);
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
+  // Query de estoque baixo: qtdEstoque <= estoqueMinimo E estoqueMinimo > 0
+  const estoqueBaixoResult = await prisma.$queryRaw<{ count: bigint }[]>`
+    SELECT COUNT(*) as count
+    FROM "produto_variantes" pv
+    JOIN "produtos" p ON p.id = pv."produtoId"
+    WHERE p."tenantId" = ${tenantId}
+      AND pv."estoqueMinimo" > 0
+      AND pv."qtdEstoque" <= pv."estoqueMinimo"
+  `;
+  const estoqueBaixo = Number(estoqueBaixoResult[0]?.count ?? 0);
+
   const [
     vendasHoje,
     vendasMes,
     totalProdutos,
     totalClientes,
-    estoqueBaixo,
     condicionaisAtivas,
     condicionaisVencidas,
     vendasRecentes,
@@ -42,12 +52,6 @@ async function getDashboardData(tenantId: string) {
     }),
     prisma.produto.count({ where: { tenantId, ativo: true } }),
     prisma.cliente.count({ where: { tenantId } }),
-    prisma.produtoVariante.count({
-      where: {
-        produto: { tenantId },
-        qtdEstoque: { lte: prisma.produtoVariante.fields.estoqueMinimo },
-      },
-    }),
     prisma.vendaCondicional.count({ where: { tenantId, status: "ATIVA" } }),
     prisma.vendaCondicional.count({
       where: { tenantId, status: "ATIVA", dataVencimento: { lt: new Date() } },

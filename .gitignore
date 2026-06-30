@@ -21,6 +21,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+dev-*.log
+sync-result.log
 
 # local env files
 .env*.local
@@ -33,8 +36,26 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma
-# /prisma/migrations/**/migration.sql
+# prisma scripts de manutenção/debug (não fazem parte do produto)
+prisma/check-*.ts
+prisma/fix-*.ts
+prisma/import-*.ts
+prisma/limpar-*.ts
+prisma/read-*.ts
+prisma/reset-*.ts
+prisma/run-*.ts
+prisma/revisao-*.ts
+prisma/sync-*.ts
+prisma/update-*.ts
+prisma/delete-*.ts
+prisma/add-*.ts
+prisma/add-*.sql
+
+# arquivos sql de debug
+*.sql
+
+# imports/exports de dados (não fazem parte do código)
+imports/*.csv
 
 # fotos (upload separado no servidor)
 /public/fotos/
