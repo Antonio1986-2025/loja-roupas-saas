@@ -37,8 +37,15 @@ export async function listarEstoque(tenantId: string, filtros: ListarFiltros) {
       OR: [
         { codigoBarras: { contains: word, mode: "insensitive" } },
         { codigoInterno: { contains: word, mode: "insensitive" } },
-        { produto: { ...baseProduto, nome: { contains: word, mode: "insensitive" } } },
-        { produto: { ...baseProduto, descricao: { contains: word, mode: "insensitive" } } },
+        {
+          produto: {
+            ...baseProduto,
+            OR: [
+              { nome: { contains: word, mode: "insensitive" } },
+              { descricao: { contains: word, mode: "insensitive" } },
+            ],
+          },
+        },
       ],
     }));
   } else {
