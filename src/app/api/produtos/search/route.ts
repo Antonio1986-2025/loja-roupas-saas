@@ -88,20 +88,6 @@ export async function GET(req: NextRequest) {
       fotoUrl: fotoUrl(v.fotoUrl, "thumb"),
     }));
 
-    const data = variantes.map((v) => ({
-      id: v.id,
-      nome: v.produto.nome,
-      cor: v.cor,
-      tamanho: v.tamanho,
-      codigoBarras: v.codigoBarras,
-      preco: Number(v.precoVenda ?? v.produto.precoVenda),
-      qtdDisponivel: v.qtdDisponivel,
-      marca: v.produto.marca,
-      codigoInterno: v.produto.codigoInterno,
-      genero: v.produto.genero,
-      fotoUrl: fotoUrl(v.produto.fotoUrl, "thumb"),
-    }));
-
     return NextResponse.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     console.error("[GET /api/produtos/search]", error);
