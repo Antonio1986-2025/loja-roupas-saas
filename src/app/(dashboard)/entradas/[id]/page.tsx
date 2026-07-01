@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ArrowLeft, Building2, FileText, Truck, DollarSign, Receipt } from "lucide-react";
+import { ArrowLeft, Building2, FileText, Truck, DollarSign, Receipt, Tag } from "lucide-react";
 import { ComprovanteEntrada } from "@/components/comprovante-entrada";
 
 async function getEntrada(tenantId: string, id: string) {
@@ -70,6 +70,11 @@ export default async function EntradaDetalhePage({
             </p>
           )}
         </div>
+        <Button variant="secondary" size="sm" asChild>
+          <Link href={"/etiquetas?entradaId=" + params.id}>
+            <Tag className="h-4 w-4 mr-1" /> Etiquetas
+          </Link>
+        </Button>
         <ComprovanteEntrada
           entrada={{
             numero: entrada.numero,

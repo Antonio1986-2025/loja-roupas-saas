@@ -24,6 +24,7 @@ export type NFeParseResult = {
 export type NFeItem = {
   nItem: number;
   codigoProduto: string;
+  codigoBarras: string;
   nome: string;
   ncm: string;
   cfop: string;
@@ -132,10 +133,17 @@ export function parseNFeXml(xmlContent: string): NFeParseResult {
     const pisMatch = imp.match(/<vPIS>([^<]*)<\/vPIS>/);
     const cofinsMatch = imp.match(/<vCOFINS>([^<]*)<\/vCOFINS>/);
 
+    let nome = getTag(prod, "xProd");
+    const codigoBarras = getTag(prod, "cEAN");
+    if (codigoBarras && nome.endsWith(codigoBarras)) {
+      nome = nome.slice(0, -codigoBarras.length).trimEnd();
+    }
+
     return {
       nItem,
       codigoProduto: getTag(prod, "cProd"),
-      nome: getTag(prod, "xProd"),
+      codigoBarras: codigoBarras || "",
+      nome,
       ncm: getTag(prod, "NCM"),
       cfop: getTag(prod, "CFOP"),
       quantidade: parseFloat(getTag(prod, "qCom") || "0"),

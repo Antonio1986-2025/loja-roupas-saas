@@ -56,9 +56,11 @@ type VarianteOption = {
 type ItemForm = {
   nItem: number;
   nomeXML: string;
-  nomeEditado: string;   // nome editável — usado ao criar produto automático
+  nomeEditado: string;
   codigoProduto: string;
+  codigoBarras: string;
   varianteId: string;
+  categoriaId: string;
   quantidade: number;
   precoUnitario: number;
   margemLucro: string;
@@ -105,6 +107,7 @@ export default function NovaEntradaPage() {
   const [itens, setItens] = useState<ItemForm[]>([]);
   const [buscaProduto, setBuscaProduto] = useState<Record<number, string>>({});
   const [criandoProdutos, setCriandoProdutos] = useState(false);
+  const [categorias, setCategorias] = useState<{ id: string; nome: string }[]>([]);
 
   // Step 4 - Finalizar
   const [observacao, setObservacao] = useState("");
@@ -112,6 +115,7 @@ export default function NovaEntradaPage() {
 
   useEffect(() => {
     fetch("/api/fornecedores").then((r) => r.ok && r.json()).then(setFornecedores).catch(() => {});
+    fetch("/api/categorias").then((r) => r.ok && r.json()).then(setCategorias).catch(() => {});
     fetch("/api/produtos?all=true").then((r) => r.ok && r.json()).then((prods) => {
       const v: VarianteOption[] = [];
       if (Array.isArray(prods)) {
@@ -155,7 +159,9 @@ export default function NovaEntradaPage() {
       nomeXML: i.nome,
       nomeEditado: i.nome,
       codigoProduto: i.codigoProduto,
+      codigoBarras: i.codigoBarras,
       varianteId: "",
+      categoriaId: "",
       quantidade: i.quantidade,
       precoUnitario: i.valorUnitario,
       margemLucro: "",
@@ -311,6 +317,12 @@ export default function NovaEntradaPage() {
     );
   }
 
+  function updateCategoriaId(nItem: number, categoriaId: string) {
+    setItens((prev) =>
+      prev.map((i) => (i.nItem === nItem ? { ...i, categoriaId } : i))
+    );
+  }
+
   function updatePrecoVendaManual(nItem: number, value: string) {
     const cleaned = value.replace(/[^\d.,]/g, "").replace(",", ".");
     setItens((prev) =>
@@ -338,11 +350,14 @@ export default function NovaEntradaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "auto-criar-produtos",
+          fornecedorId: fornecedorId || null,
           itens: itens.map((i) => ({
             nItem: i.nItem,
             nome: i.nomeEditado || i.nomeXML,
             codigoProduto: i.codigoProduto,
+            codigoBarras: i.codigoBarras || null,
             precoUnitario: i.precoUnitario,
+            categoriaId: i.categoriaId || null,
           })),
         }),
       });
@@ -887,6 +902,19 @@ export default function NovaEntradaPage() {
                               onChange={(e) => updateNomeEditado(item.nItem, e.target.value)}
                               autoComplete="off"
                             />
+                            <div>
+                              <Label className="text-[11px] text-amber-700">Categoria</Label>
+                              <select
+                                className="mt-1 w-full rounded-md border border-amber-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                value={item.categoriaId}
+                                onChange={(e) => updateCategoriaId(item.nItem, e.target.value)}
+                              >
+                                <option value="">Sem categoria</option>
+                                {categorias.map((cat) => (
+                                  <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                                ))}
+                              </select>
+                            </div>
                             <p className="text-[11px] text-amber-700">
                               Nome original do arquivo: <em>{item.nomeXML}</em>
                             </p>

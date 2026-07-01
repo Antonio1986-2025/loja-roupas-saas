@@ -13,6 +13,7 @@ export type EtiquetaItem = {
   codigoInterno: string | null;
   categoriaId: string | null;
   categoriaNome: string | null;
+  quantidadeEntrada?: number;
 };
 
 // GET /api/etiquetas?categoriaId=X&varianteIds=a,b,c&entradaId=X
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
   const tenantId = session.user.tenantId;
 
   let variantes;
+  let quantidadePorVariante: Record<string, number> = {};
 
   if (entradaId) {
     // Buscar variantes de uma entrada de mercadoria específica
@@ -46,6 +48,9 @@ export async function GET(req: NextRequest) {
     });
     if (!entrada) return NextResponse.json({ error: "NAO_ENCONTRADA" }, { status: 404 });
     variantes = entrada.itens.map((i) => i.variante);
+    quantidadePorVariante = Object.fromEntries(
+      entrada.itens.map((i) => [i.variante.id, i.quantidade])
+    );
   } else if (varianteIds) {
     // Buscar variantes específicas por ID
     const ids = varianteIds.split(",").filter(Boolean);
@@ -105,6 +110,7 @@ export async function GET(req: NextRequest) {
     codigoInterno: v.codigoInterno || v.produto?.codigoInterno,
     categoriaId: v.produto?.categoriaId,
     categoriaNome: v.produto?.categoria?.nome || null,
+    quantidadeEntrada: quantidadePorVariante[v.id] || undefined,
   }));
 
   return NextResponse.json({ data, total: data.length });

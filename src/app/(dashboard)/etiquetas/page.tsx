@@ -65,7 +65,7 @@ function EtiquetasContent() {
       const res = await fetch(`/api/etiquetas?${params}`);
       if (res.ok) {
         const json = await res.json();
-        setItens(json.data.map((i: EtiquetaItem) => ({ ...i, qtdEtiquetas: 1 })));
+        setItens(json.data.map((i: EtiquetaItem) => ({ ...i, qtdEtiquetas: i.quantidadeEntrada ?? 1 })));
       }
     } finally {
       setCarregando(false);

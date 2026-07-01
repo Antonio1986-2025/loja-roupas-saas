@@ -47,15 +47,16 @@ async function autoCadastrarFornecedor(
 
 async function autoCriarProdutos(
   tenantId: string,
-  itens: { nItem: number; nome: string; codigoProduto: string; precoUnitario: number }[]
+  fornecedorId: string | null | undefined,
+  itens: { nItem: number; nome: string; codigoProduto: string; codigoBarras?: string | null; precoUnitario: number; categoriaId?: string | null }[]
 ) {
   const resultados: { nItem: number; varianteId: string | null; criado: boolean; erro?: string }[] = [];
 
   for (const item of itens) {
     try {
-      // Garante código de barras único — usa o original, ou gera AUTO-...
-      const codigoOriginal = (item.codigoProduto ?? "").toString().trim();
-      let codBarras = codigoOriginal || `AUTO-${Date.now()}-${item.nItem}`;
+      // Usa cEAN como código de barras, ou cProd como fallback
+      const codBarrasOriginal = (item.codigoBarras ?? "").toString().trim();
+      let codBarras = codBarrasOriginal || (item.codigoProduto ?? "").toString().trim() || `AUTO-${Date.now()}-${item.nItem}`;
 
       // Verifica se já existe (mesmo tenant)
       let variante = await prisma.produtoVariante.findFirst({
@@ -65,7 +66,7 @@ async function autoCriarProdutos(
 
       // Se existe em outro tenant, gera código alternativo
       if (variante && variante.produto.tenantId !== tenantId) {
-        codBarras = `${codigoOriginal}-${tenantId.slice(0, 6)}-${item.nItem}`;
+        codBarras = `${item.codigoProduto}-${tenantId.slice(0, 6)}-${item.nItem}`;
         variante = await prisma.produtoVariante.findFirst({
           where: { codigoBarras: codBarras },
           include: { produto: { select: { tenantId: true } } },
@@ -84,7 +85,7 @@ async function autoCriarProdutos(
 
       // Garante que o nome não fique vazio (campo obrigatório no banco)
       let nome = (item.nome ?? "").toString().trim();
-      if (!nome) nome = codigoOriginal ? `Produto ${codigoOriginal}` : `Produto IA #${item.nItem}`;
+      if (!nome) nome = item.codigoProduto ? `Produto ${item.codigoProduto}` : `Produto IA #${item.nItem}`;
       const nomeCurto = nome.length > 100 ? nome.substring(0, 100) : nome;
 
       const preco = Number(item.precoUnitario) || 0;
@@ -92,6 +93,9 @@ async function autoCriarProdutos(
       const novoProduto = await prisma.produto.create({
         data: {
           tenantId,
+          fornecedorId: fornecedorId || null,
+          categoriaId: item.categoriaId || null,
+          codigoFornecedor: item.codigoProduto || null,
           nome: nomeCurto,
           ativo: true,
           precoVenda: preco,
@@ -158,7 +162,7 @@ export async function POST(req: NextRequest) {
 
     if (body.action === "auto-criar-produtos") {
       const itens = body.itens as { nItem: number; nome: string; codigoProduto: string; precoUnitario: number }[];
-      const resultados = await autoCriarProdutos(session.user.tenantId, itens);
+      const resultados = await autoCriarProdutos(session.user.tenantId, body.fornecedorId, itens);
       return NextResponse.json({ itens: resultados });
     }
 

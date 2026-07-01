@@ -36,7 +36,7 @@ export async function criarCliente(tenantId: string, data: CreateClienteInput) {
   return prisma.cliente.create({
     data: {
       ...data,
-      cpf: data.cpf || null,
+      cpf: data.cpf?.replace(/\D/g, "") || null,
       telefone: data.telefone || null,
       email: data.email || null,
       dataNascimento: data.dataNascimento ? new Date(data.dataNascimento) : null,
@@ -63,7 +63,7 @@ export async function atualizarCliente(tenantId: string, id: string, data: Updat
     where: { id },
     data: {
       ...data,
-      cpf: data.cpf || null,
+      cpf: data.cpf?.replace(/\D/g, "") || null,
       telefone: data.telefone || null,
       email: data.email || null,
       dataNascimento: data.dataNascimento ? new Date(data.dataNascimento) : null,
