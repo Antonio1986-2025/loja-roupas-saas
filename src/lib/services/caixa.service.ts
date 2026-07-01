@@ -186,38 +186,42 @@ export async function fecharCaixa(tenantId: string, caixaId: string, data: Fecha
 }
 
 export async function sangria(tenantId: string, caixaId: string, data: SangriaInput, usuarioId: string) {
-  const caixa = await prisma.caixa.findFirst({
-    where: { id: caixaId, tenantId, status: "ABERTO" },
-  });
+  return prisma.$transaction(async (tx) => {
+    const caixa = await tx.caixa.findFirst({
+      where: { id: caixaId, tenantId, status: "ABERTO" },
+    });
 
-  if (!caixa) throw new CaixaError("CAIXA_NAO_ABERTO", "Caixa não está aberto");
+    if (!caixa) throw new CaixaError("CAIXA_NAO_ABERTO", "Caixa não está aberto");
 
-  return prisma.caixaMovimento.create({
-    data: {
-      caixaId,
-      tipo: "SANGRIA",
-      valor: data.valor,
-      descricao: data.descricao,
-      usuarioId,
-    },
+    return tx.caixaMovimento.create({
+      data: {
+        caixaId,
+        tipo: "SANGRIA",
+        valor: data.valor,
+        descricao: data.descricao,
+        usuarioId,
+      },
+    });
   });
 }
 
 export async function suprimento(tenantId: string, caixaId: string, data: SuprimentoInput, usuarioId: string) {
-  const caixa = await prisma.caixa.findFirst({
-    where: { id: caixaId, tenantId, status: "ABERTO" },
-  });
+  return prisma.$transaction(async (tx) => {
+    const caixa = await tx.caixa.findFirst({
+      where: { id: caixaId, tenantId, status: "ABERTO" },
+    });
 
-  if (!caixa) throw new CaixaError("CAIXA_NAO_ABERTO", "Caixa não está aberto");
+    if (!caixa) throw new CaixaError("CAIXA_NAO_ABERTO", "Caixa não está aberto");
 
-  return prisma.caixaMovimento.create({
-    data: {
-      caixaId,
-      tipo: "SUPRIMENTO",
-      valor: data.valor,
-      descricao: data.descricao,
-      usuarioId,
-    },
+    return tx.caixaMovimento.create({
+      data: {
+        caixaId,
+        tipo: "SUPRIMENTO",
+        valor: data.valor,
+        descricao: data.descricao,
+        usuarioId,
+      },
+    });
   });
 }
 

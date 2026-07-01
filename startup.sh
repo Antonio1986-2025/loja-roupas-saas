@@ -31,7 +31,7 @@ if [ -z "$NEXTAUTH_SECRET" ]; then
 fi
 
 echo "=> Running database migrations..."
-npx prisma@5.22.0 db push --accept-data-loss --skip-generate
+npx prisma migrate deploy --skip-generate 2>/dev/null || npx prisma db push --skip-generate
 
 echo "=> Checking if database needs seeding..."
 
@@ -46,7 +46,7 @@ p.user.count()
 
 if [ "$NEEDS_SEED" = "yes" ]; then
   echo "Database is empty. Running seed..."
-  node prisma/seed.js || echo "WARNING: Seed failed, but continuing..."
+  npx tsx prisma/seed.ts || echo "WARNING: Seed failed, but continuing..."
   echo ""
   echo "========================================"
   echo "DEFAULT CREDENTIALS:"

@@ -1,18 +1,17 @@
 {
-    "description":  "Stori — Gestão simples para lojas que crescem",
-    "short_name":  "Stori",
-    "icons":  [
-                  {
-                      "purpose":  "any maskable",
-                      "type":  "image/svg+xml",
-                      "sizes":  "any",
-                      "src":  "/icon.svg"
-                  }
-              ],
-    "theme_color":  "#18181a",
-    "display":  "standalone",
-    "name":  "Stori",
-    "background_color":  "#ffffff",
-    "start_url":  "/",
-    "orientation":  "portrait-primary"
+  "name": "Stori - Gestão para Lojas",
+  "short_name": "Stori",
+  "description": "Gestão simples para lojas que crescem",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }

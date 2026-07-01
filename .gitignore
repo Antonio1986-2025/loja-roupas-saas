@@ -32,6 +32,11 @@ sync-result.log
 # vercel
 .vercel
 
+# scripts de debug/verificacao na raiz (contem credenciais)
+check-*.ts
+*.xlsx
+cookies.txt
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
