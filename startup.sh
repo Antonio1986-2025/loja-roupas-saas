@@ -31,7 +31,7 @@ if [ -z "$NEXTAUTH_SECRET" ]; then
 fi
 
 echo "=> Running database migrations..."
-npx prisma migrate deploy 2>/dev/null || npx prisma db push
+npx prisma@5.22.0 migrate deploy 2>/dev/null || npx prisma@5.22.0 db push
 
 echo "=> Checking if database needs seeding..."
 
