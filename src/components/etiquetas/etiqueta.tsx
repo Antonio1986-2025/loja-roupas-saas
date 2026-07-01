@@ -11,6 +11,7 @@ export type EtiquetaItem = {
   tamanho: string | null;
   preco: number;
   codigoInterno: string | null;
+  quantidadeEntrada?: number;
 };
 
 function truncar(s: string, n: number) {
