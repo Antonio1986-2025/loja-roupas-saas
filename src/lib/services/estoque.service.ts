@@ -25,8 +25,11 @@ export async function listarEstoque(tenantId: string, filtros: ListarFiltros) {
   const { page, limit, q, categoriaId, genero, situacao } = filtros;
   const skip = (page - 1) * limit;
 
-  const produtoWhere: Prisma.ProdutoWhereInput = { tenantId };
-  const whereVar: Prisma.ProdutoVarianteWhereInput = { produto: produtoWhere };
+  const baseProduto: Prisma.ProdutoWhereInput = { tenantId };
+  if (categoriaId) baseProduto.categoriaId = categoriaId;
+  if (genero) (baseProduto as any).genero = genero as Genero;
+
+  let whereVar: Prisma.ProdutoVarianteWhereInput = {};
 
   if (q) {
     const words = q.split(/\s+/).filter(Boolean);
@@ -34,16 +37,12 @@ export async function listarEstoque(tenantId: string, filtros: ListarFiltros) {
       OR: [
         { codigoBarras: { contains: word, mode: "insensitive" } },
         { codigoInterno: { contains: word, mode: "insensitive" } },
-        { produto: { nome: { contains: word, mode: "insensitive" } } },
-        { produto: { descricao: { contains: word, mode: "insensitive" } } },
+        { produto: { ...baseProduto, nome: { contains: word, mode: "insensitive" } } },
+        { produto: { ...baseProduto, descricao: { contains: word, mode: "insensitive" } } },
       ],
     }));
-  }
-  if (categoriaId) {
-    produtoWhere.categoriaId = categoriaId;
-  }
-  if (genero) {
-    produtoWhere.genero = genero as Genero;
+  } else {
+    whereVar.produto = baseProduto;
   }
   if (situacao === "zerado") {
     whereVar.qtdEstoque = 0;

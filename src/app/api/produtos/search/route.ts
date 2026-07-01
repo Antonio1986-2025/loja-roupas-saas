@@ -18,22 +18,22 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 20));
   const skip = (page - 1) * limit;
 
-  const searchWhere: any = {
-    produto: { tenantId: session.user.tenantId, ativo: true },
-  };
+  const baseProduto: any = { tenantId: session.user.tenantId, ativo: true };
+  if (categoriaId) baseProduto.categoriaId = categoriaId;
+
+  const searchWhere: any = {};
   if (q) {
     const words = q.split(/\s+/).filter(Boolean);
     searchWhere.AND = words.map((word) => ({
       OR: [
         { codigoBarras: { contains: word, mode: "insensitive" } },
         { codigoInterno: { contains: word, mode: "insensitive" } },
-        { produto: { nome: { contains: word, mode: "insensitive" } } },
-        { produto: { descricao: { contains: word, mode: "insensitive" } } },
+        { produto: { ...baseProduto, nome: { contains: word, mode: "insensitive" } } },
+        { produto: { ...baseProduto, descricao: { contains: word, mode: "insensitive" } } },
       ],
     }));
-  }
-  if (categoriaId) {
-    searchWhere.produto = { ...searchWhere.produto, categoriaId };
+  } else {
+    searchWhere.produto = baseProduto;
   }
   if (apenasComEstoque) {
     searchWhere.qtdDisponivel = { gt: 0 };
