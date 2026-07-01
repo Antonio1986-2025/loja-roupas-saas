@@ -24,12 +24,16 @@ export async function GET(req: NextRequest) {
   const where: any = { tenantId: session.user.tenantId };
 
   if (q) {
-    where.OR = [
-      { nome: { contains: q, mode: "insensitive" } },
-      { codigoInterno: { contains: q, mode: "insensitive" } },
-      { codigoFornecedor: { contains: q, mode: "insensitive" } },
-      { variantes: { some: { codigoBarras: { contains: q, mode: "insensitive" } } } },
-    ];
+    const words = q.split(/\s+/).filter(Boolean);
+    where.AND = words.map((word) => ({
+      OR: [
+        { nome: { contains: word, mode: "insensitive" } },
+        { descricao: { contains: word, mode: "insensitive" } },
+        { codigoInterno: { contains: word, mode: "insensitive" } },
+        { codigoFornecedor: { contains: word, mode: "insensitive" } },
+        { variantes: { some: { codigoBarras: { contains: word, mode: "insensitive" } } } },
+      ],
+    }));
   }
   if (categoriaId) where.categoriaId = categoriaId;
   if (genero) where.genero = genero as Genero;

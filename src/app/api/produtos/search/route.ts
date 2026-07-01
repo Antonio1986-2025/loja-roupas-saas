@@ -22,11 +22,15 @@ export async function GET(req: NextRequest) {
     produto: { tenantId: session.user.tenantId, ativo: true },
   };
   if (q) {
-    searchWhere.OR = [
-      { codigoBarras: { contains: q, mode: "insensitive" } },
-      { codigoInterno: { contains: q, mode: "insensitive" } },
-      { produto: { nome: { contains: q, mode: "insensitive" } } },
-    ];
+    const words = q.split(/\s+/).filter(Boolean);
+    searchWhere.AND = words.map((word) => ({
+      OR: [
+        { codigoBarras: { contains: word, mode: "insensitive" } },
+        { codigoInterno: { contains: word, mode: "insensitive" } },
+        { produto: { nome: { contains: word, mode: "insensitive" } } },
+        { produto: { descricao: { contains: word, mode: "insensitive" } } },
+      ],
+    }));
   }
   if (categoriaId) {
     searchWhere.produto = { ...searchWhere.produto, categoriaId };

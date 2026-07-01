@@ -29,11 +29,15 @@ export async function listarEstoque(tenantId: string, filtros: ListarFiltros) {
   const whereVar: Prisma.ProdutoVarianteWhereInput = { produto: produtoWhere };
 
   if (q) {
-    whereVar.OR = [
-      { codigoBarras: { contains: q, mode: "insensitive" } },
-      { codigoInterno: { contains: q, mode: "insensitive" } },
-      { produto: { nome: { contains: q, mode: "insensitive" } } },
-    ];
+    const words = q.split(/\s+/).filter(Boolean);
+    whereVar.AND = words.map((word) => ({
+      OR: [
+        { codigoBarras: { contains: word, mode: "insensitive" } },
+        { codigoInterno: { contains: word, mode: "insensitive" } },
+        { produto: { nome: { contains: word, mode: "insensitive" } } },
+        { produto: { descricao: { contains: word, mode: "insensitive" } } },
+      ],
+    }));
   }
   if (categoriaId) {
     produtoWhere.categoriaId = categoriaId;
