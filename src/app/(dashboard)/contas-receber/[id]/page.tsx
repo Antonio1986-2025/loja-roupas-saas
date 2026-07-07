@@ -194,6 +194,7 @@ export default function EditarContaReceberPage() {
                   <option value="CREDITO">Crédito</option>
                   <option value="PIX">PIX</option>
                   <option value="BOLETO">Boleto</option>
+                  <option value="DUPLICATA">Duplicata</option>
                 </select>
               </div>
               <div className="space-y-2">

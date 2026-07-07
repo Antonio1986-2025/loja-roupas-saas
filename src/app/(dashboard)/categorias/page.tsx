@@ -62,10 +62,10 @@ export default function CategoriasPage() {
             {carregando ? "Carregando..." : `${total} categoria(s) encontrada(s)`}
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="shrink-0">
           <Link href="/categorias/novo">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Categoria
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nova Categoria</span>
           </Link>
         </Button>
       </div>

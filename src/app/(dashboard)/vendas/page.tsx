@@ -39,6 +39,7 @@ const formaLabels: Record<string, string> = {
   CREDITO: "Crédito",
   PIX: "PIX",
   BOLETO: "Boleto",
+  DUPLICATA: "Duplicata",
   CREDITO_LOJA: "Crédito Loja",
 };
 
@@ -143,6 +144,7 @@ export default function VendasPage() {
           <option value="DEBITO">Débito</option>
           <option value="CREDITO">Crédito</option>
           <option value="BOLETO">Boleto</option>
+          <option value="DUPLICATA">Duplicata</option>
           <option value="CREDITO_LOJA">Crédito Loja</option>
         </select>
       </div>

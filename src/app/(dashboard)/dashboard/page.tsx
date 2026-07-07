@@ -78,6 +78,7 @@ const formaPagamentoLabel: Record<string, string> = {
   CREDITO: "Crédito",
   PIX: "PIX",
   BOLETO: "Boleto",
+  DUPLICATA: "Duplicata",
 };
 
 export default async function DashboardPage() {

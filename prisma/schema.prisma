@@ -284,6 +284,7 @@ model Venda {
   formaPagamento  FormaPagamento
   status          StatusVenda   @default(CONCLUIDA)
   observacoes     String?
+  qtdParcelas     Int       @default(1)
   caixaId         String?
   origemCondicionalId String? @unique
   tenantId        String
@@ -316,6 +317,7 @@ enum FormaPagamento {
   PIX
   BOLETO
   CREDITO_LOJA
+  DUPLICATA
 }
 
 enum StatusVenda {

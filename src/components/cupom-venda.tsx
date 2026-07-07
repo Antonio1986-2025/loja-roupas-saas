@@ -32,6 +32,8 @@ const FORMA_LABEL: Record<string, string> = {
   DEBITO: "Débito",
   CREDITO: "Crédito",
   BOLETO: "Boleto",
+  DUPLICATA: "Duplicata",
+  CREDITO_LOJA: "Crédito Loja",
 };
 
 function imprimir() {

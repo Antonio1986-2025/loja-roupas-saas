@@ -33,10 +33,10 @@ export default async function FuncionariosPage() {
             Gerencie seus funcionários cadastrados
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="shrink-0">
           <Link href="/funcionarios/novo">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Funcionário
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Novo Funcionário</span>
           </Link>
         </Button>
       </div>

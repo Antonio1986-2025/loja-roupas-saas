@@ -91,9 +91,9 @@ export default function ContasReceberPage() {
           <h1 className="text-3xl font-bold">Contas a Receber</h1>
           <p className="text-muted-foreground">Gerencie seus recebimentos</p>
         </div>
-        <Button asChild>
+        <Button asChild className="shrink-0">
           <Link href="/contas-receber/novo">
-            <Plus className="mr-2 h-4 w-4" /> Nova Conta
+            <Plus className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Nova Conta</span>
           </Link>
         </Button>
       </div>

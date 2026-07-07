@@ -45,10 +45,10 @@ export default async function EntradasPage() {
             Registre a chegada de produtos no estoque
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="shrink-0">
           <Link href="/entradas/nova">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Entrada
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nova Entrada</span>
           </Link>
         </Button>
       </div>

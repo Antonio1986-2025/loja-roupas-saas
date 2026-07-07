@@ -100,10 +100,10 @@ export default function ProdutosPage() {
         </div>
         <div className="flex gap-2">
           <ImportProdutosButton />
-          <Button asChild>
+          <Button asChild className="shrink-0">
             <Link href="/produtos/novo">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Produto
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Novo Produto</span>
             </Link>
           </Button>
         </div>

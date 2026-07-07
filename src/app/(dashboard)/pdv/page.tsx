@@ -57,6 +57,7 @@ const FORMAS_PAGAMENTO = [
   { value: "DEBITO", label: "Débito", icon: "💳" },
   { value: "CREDITO", label: "Crédito", icon: "💳" },
   { value: "BOLETO", label: "Boleto", icon: "📄" },
+  { value: "DUPLICATA", label: "Duplicata", icon: "📝" },
 ] as const;
 
 export default function PdvPage() {
@@ -83,6 +84,7 @@ export default function PdvPage() {
   const [tipoDesconto, setTipoDesconto] = useState<"valor" | "porcentagem">("valor");
   const [usarCredito, setUsarCredito] = useState(false);
   const [observacoes, setObservacoes] = useState("");
+  const [qtdParcelas, setQtdParcelas] = useState(1);
   const [caixaAtual, setCaixaAtual] = useState<{ id: string; saldoAtual: number } | null>(null);
   const [caixaLoading, setCaixaLoading] = useState(true);
   const [mostrarAbrirCaixa, setMostrarAbrirCaixa] = useState(false);
@@ -181,6 +183,7 @@ export default function PdvPage() {
       if (e.key === "F3") { e.preventDefault(); setFormaPagamento("DEBITO"); }
       if (e.key === "F4") { e.preventDefault(); setFormaPagamento("CREDITO"); }
       if (e.key === "F5") { e.preventDefault(); setFormaPagamento("BOLETO"); }
+      if (e.key === "F6") { e.preventDefault(); setFormaPagamento("DUPLICATA"); setQtdParcelas(1); }
       if (e.key === "F8") { e.preventDefault(); searchRef.current?.focus(); }
       if (e.key === "F12") { e.preventDefault(); abrirConfirmacao(); }
       if (e.key === "Escape") { e.preventDefault(); setProdBusca(""); searchRef.current?.focus(); }
@@ -291,6 +294,7 @@ export default function PdvPage() {
           caixaId: caixaAtual?.id || undefined,
           formaPagamento,
           pagamentos: pagamentosEnvio,
+          qtdParcelas: formaPagamento === "DUPLICATA" ? qtdParcelas : undefined,
           desconto: descontoValor,
           observacoes: observacoes || undefined,
           itens: itens.map((i) => ({
@@ -330,6 +334,7 @@ export default function PdvPage() {
         setPagamentoMisto(false);
         setSplitPagamentos([]);
         setUsarCredito(false);
+        setQtdParcelas(1);
       } else {
         const err = await res.json();
         const msg = err.message 
@@ -781,9 +786,33 @@ export default function PdvPage() {
                 </span>
               </label>
             </div>
-          )}
+            )}
 
-          <div>
+            {formaPagamento === "DUPLICATA" && !pagamentoMisto && (
+            <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 p-2.5">
+              <span className="text-sm text-blue-800 font-medium shrink-0">Parcelas:</span>
+              <div className="flex gap-1 flex-wrap">
+                {[1,2,3,4,5,6,7,8,9,10,11,12].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setQtdParcelas(n)}
+                    className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                      qtdParcelas === n
+                        ? "bg-blue-600 text-white"
+                        : "bg-white text-blue-700 hover:bg-blue-100 border border-blue-300"
+                    }`}
+                  >
+                    {n}x
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs text-blue-600 ml-auto shrink-0">
+                {formatCurrency(totalEfetivo / qtdParcelas)}/mês
+              </span>
+            </div>
+            )}
+
+            <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium">Forma de Pagamento</p>
               <button

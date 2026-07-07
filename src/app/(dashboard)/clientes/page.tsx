@@ -68,10 +68,10 @@ export default function ClientesPage() {
             {carregando ? "Carregando..." : `${total} cliente(s) encontrado(s)`}
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="shrink-0">
           <Link href="/clientes/novo">
-            <Users className="mr-2 h-4 w-4" />
-            Novo Cliente
+            <Users className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Novo Cliente</span>
           </Link>
         </Button>
       </div>

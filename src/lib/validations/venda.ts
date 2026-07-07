@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const formaPagamentoEnum = z.enum(["DINHEIRO", "DEBITO", "CREDITO", "PIX", "BOLETO"]);
+const formaPagamentoEnum = z.enum(["DINHEIRO", "DEBITO", "CREDITO", "PIX", "BOLETO", "DUPLICATA"]);
 
 export const createVendaSchema = z.object({
   clienteId: z.string().optional(),
@@ -26,10 +26,11 @@ export const createVendaSchema = z.object({
     .optional(),
   desconto: z.number().min(0).default(0),
   observacoes: z.string().optional(),
+  qtdParcelas: z.number().int().min(1).max(12).optional(),
 });
 
 export type CreateVendaInput = z.infer<typeof createVendaSchema>;
-export type PagamentoInput = { formaPagamento: "DINHEIRO" | "DEBITO" | "CREDITO" | "PIX" | "BOLETO"; valor: number };
+export type PagamentoInput = { formaPagamento: "DINHEIRO" | "DEBITO" | "CREDITO" | "PIX" | "BOLETO" | "DUPLICATA"; valor: number };
 
 export const devolucaoSchema = z.object({
   itens: z

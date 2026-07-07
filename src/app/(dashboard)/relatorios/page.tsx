@@ -34,6 +34,7 @@ const CORES_PAGAMENTO: Record<string, string> = {
   CREDITO: "#8b5cf6",
   PIX: "#10b981",
   BOLETO: "#f59e0b",
+  DUPLICATA: "#6366f1",
 };
 
 export default function RelatoriosPage() {

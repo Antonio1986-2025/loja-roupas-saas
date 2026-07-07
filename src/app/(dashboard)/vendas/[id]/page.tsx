@@ -11,7 +11,7 @@ import Link from "next/link";
 import ModalDevolucao from "@/components/modal-devolucao";
 
 const formaPagamentoLabels: Record<string, string> = {
-  DINHEIRO: "Dinheiro", DEBITO: "Débito", CREDITO: "Crédito", PIX: "PIX", BOLETO: "Boleto", CREDITO_LOJA: "Crédito Loja",
+  DINHEIRO: "Dinheiro", DEBITO: "Débito", CREDITO: "Crédito", PIX: "PIX", BOLETO: "Boleto", DUPLICATA: "Duplicata", CREDITO_LOJA: "Crédito Loja",
 };
 
 const statusColors: Record<string, string> = {
@@ -168,6 +168,12 @@ export default function DetalheVendaPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Observações</span>
                 <span className="text-right max-w-[200px]">{venda.observacoes}</span>
+              </div>
+            )}
+            {venda.formaPagamento === "DUPLICATA" && venda.qtdParcelas && venda.qtdParcelas > 1 && (
+              <div className="flex justify-between text-blue-600">
+                <span>Parcelamento</span>
+                <span className="font-semibold">{venda.qtdParcelas}x de {formatCurrency(Number(venda.total) / venda.qtdParcelas)}</span>
               </div>
             )}
           </CardContent>

@@ -94,6 +94,7 @@ export async function criarVenda(
         formaPagamento: data.formaPagamento,
         status: "CONCLUIDA",
         observacoes: data.observacoes,
+        qtdParcelas: data.qtdParcelas || 1,
         caixaId: data.caixaId || null,
         itens: { create: itensData },
         pagamentos: { create: pagamentosData },
@@ -174,7 +175,7 @@ export async function criarVenda(
 function gerarContasReceberMultiplos(
   pagamentos: { formaPagamento: FormaPagamento; valor: Prisma.Decimal }[],
   _total: Prisma.Decimal,
-  venda: { id: string; clienteId: string | null; numero: number },
+  venda: { id: string; clienteId: string | null; numero: number; qtdParcelas?: number | null },
   tenantId: string
 ) {
   const hoje = new Date();
@@ -245,6 +246,30 @@ function gerarContasReceberMultiplos(
         observacoes: `Venda #${venda.numero} - Boleto 3 dias`,
         tenantId,
       });
+    }
+
+    if (pag.formaPagamento === "DUPLICATA") {
+      const numParcelas = venda.qtdParcelas || 1;
+      const valorParcela = pag.valor.div(numParcelas).toDecimalPlaces(2);
+      let somaParcelas = new Prisma.Decimal(0);
+      for (let i = 1; i <= numParcelas; i++) {
+        const vencimento = new Date(hoje);
+        vencimento.setDate(vencimento.getDate() + 30 * i);
+        const valorFinal = i === numParcelas ? pag.valor.sub(somaParcelas) : valorParcela;
+        somaParcelas = somaParcelas.add(valorFinal);
+        resultado.push({
+          descricao: `Venda #${venda.numero} - Duplicata ${i}/${numParcelas}`,
+          valor: valorFinal,
+          dataVencimento: vencimento,
+          status: "PENDENTE",
+          categoria: "VENDA",
+          formaPagamento: "DUPLICATA",
+          clienteId: venda.clienteId,
+          vendaId: venda.id,
+          observacoes: `Venda #${venda.numero} - Duplicata ${i}/${numParcelas} - ${numParcelas}x`,
+          tenantId,
+        });
+      }
     }
   }
 

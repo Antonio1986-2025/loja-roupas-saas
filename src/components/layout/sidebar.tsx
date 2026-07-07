@@ -125,7 +125,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex h-full w-64 flex-col bg-sidebar border-r">
       <div className="flex items-center justify-between p-6">
-        <h1 className="text-2xl font-bold text-primary">California Store</h1>
+        <h1 className="text-2xl font-bold text-primary">Stori</h1>
         {onClose && (
           <button onClick={onClose} className="md:hidden rounded-md p-1 hover:bg-sidebar-accent">
             <X className="h-5 w-5" />
