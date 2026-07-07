@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { canAccess } from "@/lib/roles";
 
-const PUBLIC_ROUTES = ["/auth/login", "/auth/register", "/bloqueado", "/api/auth", "/api/plano"];
+const PUBLIC_ROUTES = ["/auth/login", "/auth/register", "/bloqueado", "/api/auth", "/api/plano", "/api/health"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
