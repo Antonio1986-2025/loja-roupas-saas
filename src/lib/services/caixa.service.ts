@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { AbrirCaixaInput, FecharCaixaInput, SangriaInput, SuprimentoInput } from "@/lib/validations/caixa";
+import { totalizarPagamentosPorForma, totalizarMovimentos, calcularSaldoCaixa, calcularDiferencaCaixa } from "@/lib/calculations/caixa";
 
 export class CaixaError extends Error {
   constructor(public code: string, message: string) {
@@ -46,35 +47,26 @@ export async function getCaixaAtual(tenantId: string): Promise<CaixaAtual | null
 
   if (!caixa) return null;
 
-  let totalDinheiro = 0;
-  let totalPix = 0;
-  let totalDebito = 0;
-  let totalCredito = 0;
-  let totalCreditoLoja = 0;
-  let totalBoleto = 0;
+  const pagamentos = caixa.vendas.flatMap((v) => v.pagamentos);
+  const {
+    dinheiro: totalDinheiro,
+    pix: totalPix,
+    debito: totalDebito,
+    credito: totalCredito,
+    creditoLoja: totalCreditoLoja,
+    boleto: totalBoleto,
+  } = totalizarPagamentosPorForma(pagamentos);
 
-  for (const venda of caixa.vendas) {
-    for (const pag of venda.pagamentos) {
-      const valor = Number(pag.valor);
-      switch (pag.formaPagamento) {
-        case "DINHEIRO": totalDinheiro += valor; break;
-        case "PIX": totalPix += valor; break;
-        case "DEBITO": totalDebito += valor; break;
-        case "CREDITO": totalCredito += valor; break;
-        case "CREDITO_LOJA": totalCreditoLoja += valor; break;
-        case "BOLETO": totalBoleto += valor; break;
-      }
-    }
-  }
+  const { suprimentos: totalSuprimentos, sangrias: totalSangrias } = totalizarMovimentos(
+    caixa.movimentos
+  );
 
-  let totalSuprimentos = 0;
-  let totalSangrias = 0;
-  for (const mov of caixa.movimentos) {
-    if (mov.tipo === "SUPRIMENTO") totalSuprimentos += Number(mov.valor);
-    if (mov.tipo === "SANGRIA") totalSangrias += Number(mov.valor);
-  }
-
-  const saldoAtual = Number(caixa.saldoInicial) + totalDinheiro + totalSuprimentos - totalSangrias;
+  const saldoAtual = calcularSaldoCaixa(
+    caixa.saldoInicial,
+    totalDinheiro,
+    totalSuprimentos,
+    totalSangrias
+  );
 
   return {
     id: caixa.id,
@@ -146,22 +138,19 @@ export async function fecharCaixa(tenantId: string, caixaId: string, data: Fecha
     if (!caixa) throw new CaixaError("CAIXA_NAO_ENCONTRADO", "Caixa não encontrado");
     if (caixa.status !== "ABERTO") throw new CaixaError("CAIXA_FECHADO", "Caixa já está fechado");
 
-    let totalDinheiro = 0;
-    for (const venda of caixa.vendas) {
-      for (const pag of venda.pagamentos) {
-        if (pag.formaPagamento === "DINHEIRO") totalDinheiro += Number(pag.valor);
-      }
-    }
+    const pagamentos = caixa.vendas.flatMap((v) => v.pagamentos);
+    const { dinheiro: totalDinheiro } = totalizarPagamentosPorForma(pagamentos);
+    const { suprimentos: totalSuprimentos, sangrias: totalSangrias } = totalizarMovimentos(
+      caixa.movimentos
+    );
 
-    let totalSuprimentos = 0;
-    let totalSangrias = 0;
-    for (const mov of caixa.movimentos) {
-      if (mov.tipo === "SUPRIMENTO") totalSuprimentos += Number(mov.valor);
-      if (mov.tipo === "SANGRIA") totalSangrias += Number(mov.valor);
-    }
-
-    const saldoFinal = Number(caixa.saldoInicial) + totalDinheiro + totalSuprimentos - totalSangrias;
-    const diferenca = Number(data.saldoReal) - saldoFinal;
+    const saldoFinal = calcularSaldoCaixa(
+      caixa.saldoInicial,
+      totalDinheiro,
+      totalSuprimentos,
+      totalSangrias
+    );
+    const diferenca = calcularDiferencaCaixa(data.saldoReal, saldoFinal);
 
     await tx.caixa.update({
       where: { id: caixaId },
@@ -197,38 +186,42 @@ export async function fecharCaixa(tenantId: string, caixaId: string, data: Fecha
 }
 
 export async function sangria(tenantId: string, caixaId: string, data: SangriaInput, usuarioId: string) {
-  const caixa = await prisma.caixa.findFirst({
-    where: { id: caixaId, tenantId, status: "ABERTO" },
-  });
+  return prisma.$transaction(async (tx) => {
+    const caixa = await tx.caixa.findFirst({
+      where: { id: caixaId, tenantId, status: "ABERTO" },
+    });
 
-  if (!caixa) throw new CaixaError("CAIXA_NAO_ABERTO", "Caixa não está aberto");
+    if (!caixa) throw new CaixaError("CAIXA_NAO_ABERTO", "Caixa não está aberto");
 
-  return prisma.caixaMovimento.create({
-    data: {
-      caixaId,
-      tipo: "SANGRIA",
-      valor: data.valor,
-      descricao: data.descricao,
-      usuarioId,
-    },
+    return tx.caixaMovimento.create({
+      data: {
+        caixaId,
+        tipo: "SANGRIA",
+        valor: data.valor,
+        descricao: data.descricao,
+        usuarioId,
+      },
+    });
   });
 }
 
 export async function suprimento(tenantId: string, caixaId: string, data: SuprimentoInput, usuarioId: string) {
-  const caixa = await prisma.caixa.findFirst({
-    where: { id: caixaId, tenantId, status: "ABERTO" },
-  });
+  return prisma.$transaction(async (tx) => {
+    const caixa = await tx.caixa.findFirst({
+      where: { id: caixaId, tenantId, status: "ABERTO" },
+    });
 
-  if (!caixa) throw new CaixaError("CAIXA_NAO_ABERTO", "Caixa não está aberto");
+    if (!caixa) throw new CaixaError("CAIXA_NAO_ABERTO", "Caixa não está aberto");
 
-  return prisma.caixaMovimento.create({
-    data: {
-      caixaId,
-      tipo: "SUPRIMENTO",
-      valor: data.valor,
-      descricao: data.descricao,
-      usuarioId,
-    },
+    return tx.caixaMovimento.create({
+      data: {
+        caixaId,
+        tipo: "SUPRIMENTO",
+        valor: data.valor,
+        descricao: data.descricao,
+        usuarioId,
+      },
+    });
   });
 }
 

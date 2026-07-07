@@ -18,6 +18,26 @@ import {
 import { ArrowLeft, Loader2, Save, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
+type FormData = {
+  descricao: string;
+  valor: string;
+  dataVencimento: string;
+  categoria: string;
+  formaPagamento: string;
+  clienteId: string;
+  observacoes: string;
+};
+
+const FORM_VAZIO: FormData = {
+  descricao: "",
+  valor: "",
+  dataVencimento: "",
+  categoria: "CLIENTE",
+  formaPagamento: "",
+  clienteId: "",
+  observacoes: "",
+};
+
 export default function EditarContaReceberPage() {
   const router = useRouter();
   const params = useParams();
@@ -29,6 +49,7 @@ export default function EditarContaReceberPage() {
   const [erro, setErro] = useState("");
   const [conta, setConta] = useState<any>(null);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [form, setForm] = useState<FormData>(FORM_VAZIO);
 
   useEffect(() => {
     Promise.all([
@@ -38,33 +59,37 @@ export default function EditarContaReceberPage() {
       setClientes(cls || []);
       setConta(c);
       if (c) {
-        const form = document.forms.namedItem("formConta") as HTMLFormElement;
-        if (form) {
-          (form.elements.namedItem("descricao") as HTMLInputElement).value = c.descricao;
-          (form.elements.namedItem("valor") as HTMLInputElement).value = c.valor;
-          (form.elements.namedItem("dataVencimento") as HTMLInputElement).value = c.dataVencimento?.split("T")[0] || "";
-          (form.elements.namedItem("categoria") as HTMLSelectElement).value = c.categoria || "CLIENTE";
-          (form.elements.namedItem("formaPagamento") as HTMLSelectElement).value = c.formaPagamento || "";
-          (form.elements.namedItem("clienteId") as HTMLSelectElement).value = c.clienteId || "";
-          (form.elements.namedItem("observacoes") as HTMLTextAreaElement).value = c.observacoes || "";
-        }
+        setForm({
+          descricao:      c.descricao ?? "",
+          valor:          c.valor != null ? String(c.valor) : "",
+          dataVencimento: c.dataVencimento ? c.dataVencimento.split("T")[0] : "",
+          categoria:      c.categoria ?? "CLIENTE",
+          formaPagamento: c.formaPagamento ?? "",
+          clienteId:      c.clienteId ?? "",
+          observacoes:    c.observacoes ?? "",
+        });
       }
     }).catch(() => router.push("/contas-receber"))
     .finally(() => setCarregando(false));
   }, [params.id, router]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro(""); setSalvando(true);
-    const form = new FormData(e.currentTarget);
     const data = {
-      descricao: form.get("descricao") as string,
-      valor: form.get("valor") as string,
-      dataVencimento: form.get("dataVencimento") as string,
-      categoria: form.get("categoria") as string,
-      formaPagamento: form.get("formaPagamento") as string,
-      clienteId: form.get("clienteId") as string,
-      observacoes: form.get("observacoes") as string,
+      descricao: form.descricao,
+      valor: form.valor,
+      dataVencimento: form.dataVencimento,
+      categoria: form.categoria,
+      formaPagamento: form.formaPagamento,
+      clienteId: form.clienteId,
+      observacoes: form.observacoes,
     };
     try {
       const res = await fetch(`/api/contas-receber/${params.id}`, {
@@ -157,7 +182,7 @@ export default function EditarContaReceberPage() {
         </div>
       </div>
 
-      <form name="formConta" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader><CardTitle>Informações</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -165,19 +190,19 @@ export default function EditarContaReceberPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="descricao">Descrição *</Label>
-                <Input id="descricao" name="descricao" required placeholder="Parcela venda #123" />
+                <Input id="descricao" name="descricao" required value={form.descricao} onChange={handleChange} placeholder="Parcela venda #123" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="valor">Valor *</Label>
-                <Input id="valor" name="valor" type="number" step="0.01" required />
+                <Input id="valor" name="valor" type="number" step="0.01" required value={form.valor} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="dataVencimento">Vencimento *</Label>
-                <Input id="dataVencimento" name="dataVencimento" type="date" required />
+                <Input id="dataVencimento" name="dataVencimento" type="date" required value={form.dataVencimento} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="categoria">Categoria</Label>
-                <select id="categoria" name="categoria" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select id="categoria" name="categoria" value={form.categoria} onChange={handleChange} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="CLIENTE">Cliente</option>
                   <option value="VENDA">Venda</option>
                   <option value="SERVICO">Serviço</option>
@@ -187,7 +212,7 @@ export default function EditarContaReceberPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
-                <select id="formaPagamento" name="formaPagamento" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select id="formaPagamento" name="formaPagamento" value={form.formaPagamento} onChange={handleChange} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="">Selecione...</option>
                   <option value="DINHEIRO">Dinheiro</option>
                   <option value="DEBITO">Débito</option>
@@ -199,14 +224,14 @@ export default function EditarContaReceberPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="clienteId">Cliente</Label>
-                <select id="clienteId" name="clienteId" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select id="clienteId" name="clienteId" value={form.clienteId} onChange={handleChange} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="">Nenhum</option>
                   {clientes.map((c) => (<option key={c.id} value={c.id}>{c.nome}</option>))}
                 </select>
               </div>
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="observacoes">Observações</Label>
-                <textarea id="observacoes" name="observacoes" className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" rows={3} />
+                <textarea id="observacoes" name="observacoes" value={form.observacoes} onChange={handleChange} className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" rows={3} />
               </div>
             </div>
             <div className="flex justify-end gap-4 pt-4">

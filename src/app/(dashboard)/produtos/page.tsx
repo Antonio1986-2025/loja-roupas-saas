@@ -37,6 +37,7 @@ export default function ProdutosPage() {
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [generoFiltro, setGeneroFiltro] = useState("");
   const [estoqueBaixoFiltro, setEstoqueBaixoFiltro] = useState(false);
+  const [apenasComEstoque, setApenasComEstoque] = useState(false);
   const [categorias, setCategorias] = useState<{ id: string; nome: string }[]>([]);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function ProdutosPage() {
     }).catch(() => {});
   }, []);
 
-  const fetchProdutos = useCallback(async (p: number, q: string, catId: string, gen: string, estBaixo: boolean) => {
+  const fetchProdutos = useCallback(async (p: number, q: string, catId: string, gen: string, estBaixo: boolean, comEstoque: boolean) => {
     setCarregando(true);
     try {
       const params = new URLSearchParams();
@@ -59,6 +60,7 @@ export default function ProdutosPage() {
       if (catId) params.set("categoriaId", catId);
       if (gen) params.set("genero", gen);
       if (estBaixo) params.set("estoqueBaixo", "true");
+      if (comEstoque) params.set("apenasComEstoque", "true");
 
       const res = await fetch(`/api/produtos/list?${params}`);
       if (res.ok) {
@@ -74,11 +76,11 @@ export default function ProdutosPage() {
 
   useEffect(() => {
     setPage(1);
-    fetchProdutos(1, busca, categoriaFiltro, generoFiltro, estoqueBaixoFiltro);
-  }, [busca, categoriaFiltro, generoFiltro, estoqueBaixoFiltro, fetchProdutos]);
+    fetchProdutos(1, busca, categoriaFiltro, generoFiltro, estoqueBaixoFiltro, apenasComEstoque);
+  }, [busca, categoriaFiltro, generoFiltro, estoqueBaixoFiltro, apenasComEstoque, fetchProdutos]);
 
   useEffect(() => {
-    if (page > 1) fetchProdutos(page, busca, categoriaFiltro, generoFiltro, estoqueBaixoFiltro);
+    if (page > 1) fetchProdutos(page, busca, categoriaFiltro, generoFiltro, estoqueBaixoFiltro, apenasComEstoque);
   }, [page]);
 
   const generos = [
@@ -155,6 +157,16 @@ export default function ProdutosPage() {
           }`}
         >
           Estoque Baixo
+        </button>
+        <button
+          onClick={() => setApenasComEstoque(!apenasComEstoque)}
+          className={`h-10 px-3 rounded-md border text-sm transition-colors ${
+            apenasComEstoque
+              ? "bg-green-600 text-white border-green-600"
+              : "bg-background text-muted-foreground border-input hover:bg-accent"
+          }`}
+        >
+          ✅ Com Estoque
         </button>
       </div>
 
@@ -252,6 +264,11 @@ export default function ProdutosPage() {
                       <Link href={`/produtos/${produto.id}`}>
                         <Edit className="mr-2 h-4 w-4" />
                         Editar
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild title="Imprimir etiquetas">
+                      <Link href={`/etiquetas?produtoId=${produto.id}`}>
+                        🏷️
                       </Link>
                     </Button>
                     <DeleteProdutoButton produtoId={produto.id} />

@@ -1,3 +1,3 @@
 @echo off
-cd /d "C:\Users\Admin\Downloads\KIRO PROJETOS\loja de roupas\californiastore-saas"
+echo Iniciando California Store...
 start "NextDev" cmd /c npm run dev

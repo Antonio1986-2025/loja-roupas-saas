@@ -42,12 +42,24 @@ export async function POST(req: NextRequest) {
       );
     }
     if (error && typeof error === "object" && "issues" in error) {
+      const issues = (error as any).issues as { path: (string | number)[]; message: string }[];
+      const msg = issues.map((i) => i.message).join("; ");
       return NextResponse.json(
-        { error: "VALIDACAO", issues: (error as any).issues },
+        { error: "VALIDACAO", message: msg, issues },
         { status: 400 }
       );
     }
+    const errMsg = error instanceof Error ? error.message : "";
+    if (errMsg.includes("Unique constraint") || errMsg.includes("P2002")) {
+      return NextResponse.json(
+        { error: "CPF_DUPLICADO", message: "Já existe um cliente com este CPF cadastrado." },
+        { status: 409 }
+      );
+    }
     console.error("[POST /api/clientes]", error);
-    return NextResponse.json({ error: "ERRO_INTERNO" }, { status: 500 });
+    return NextResponse.json(
+      { error: "ERRO_INTERNO", message: "Erro interno ao cadastrar cliente. Tente novamente." },
+      { status: 500 }
+    );
   }
 }

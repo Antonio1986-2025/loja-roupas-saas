@@ -32,6 +32,7 @@ type VarianteItem = {
 type Resumo = {
   totalUnidades: number;
   valorTotal: number;
+  valorCusto: number;
   totalVariantes: number;
   totalBaixo: number;
   totalZerado: number;
@@ -140,7 +141,7 @@ export default function EstoquePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -156,10 +157,23 @@ export default function EstoquePage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-muted-foreground">Valor Total</div>
-                <div className="text-2xl font-bold mt-1">{resumo ? formatCurrency(resumo.valorTotal) : "-"}</div>
+                <div className="text-sm text-muted-foreground">Valor de Custo</div>
+                <div className="text-2xl font-bold mt-1 text-orange-600">{resumo ? formatCurrency(resumo.valorCusto) : "-"}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">preço de compra</div>
               </div>
-              <DollarSign className="h-8 w-8 text-muted-foreground/30" />
+              <DollarSign className="h-8 w-8 text-orange-400/30" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-muted-foreground">Valor de Venda</div>
+                <div className="text-2xl font-bold mt-1 text-green-600">{resumo ? formatCurrency(resumo.valorTotal) : "-"}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">preço de venda</div>
+              </div>
+              <DollarSign className="h-8 w-8 text-green-400/30" />
             </div>
           </CardContent>
         </Card>

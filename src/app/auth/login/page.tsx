@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +34,7 @@ export default function LoginPage() {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (err) {
+    } catch {
       setError("Erro ao fazer login. Tente novamente.");
     } finally {
       setLoading(false);
@@ -44,9 +45,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold">California Store</CardTitle>
+          <CardTitle className="text-3xl font-bold">Stori</CardTitle>
           <CardDescription>
-            Sistema de gestão para lojas de roupas
+            Gestão simples para lojas que crescem
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,6 +85,15 @@ export default function LoginPage() {
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
+          <p className="text-sm text-center text-muted-foreground mt-4">
+            Ainda não tem conta?{" "}
+            <Link
+              href="/auth/register"
+              className="text-primary font-medium hover:underline"
+            >
+              Criar minha loja grátis
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

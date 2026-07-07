@@ -10,12 +10,21 @@ import { ArrowLeft, Loader2, Save } from "lucide-react";
 import Link from "next/link";
 import { DeleteCategoriaButton } from "@/components/delete-categoria-button";
 
+type FormData = {
+  nome: string;
+};
+
+const FORM_VAZIO: FormData = {
+  nome: "",
+};
+
 export default function EditarCategoriaPage() {
   const router = useRouter();
   const params = useParams();
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
+  const [form, setForm] = useState<FormData>(FORM_VAZIO);
 
   useEffect(() => {
     async function carregar() {
@@ -26,10 +35,9 @@ export default function EditarCategoriaPage() {
           return;
         }
         const data = await res.json();
-        const form = document.forms.namedItem("formCategoria") as HTMLFormElement;
-        if (form) {
-          (form.elements.namedItem("nome") as HTMLInputElement).value = data.nome;
-        }
+        setForm({
+          nome: data.nome ?? "",
+        });
       } catch {
         router.push("/categorias");
       } finally {
@@ -39,19 +47,20 @@ export default function EditarCategoriaPage() {
     carregar();
   }, [params.id, router]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
     setSalvando(true);
-
-    const form = new FormData(e.currentTarget);
-    const nome = form.get("nome") as string;
 
     try {
       const res = await fetch(`/api/categorias/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome }),
+        body: JSON.stringify({ nome: form.nome }),
       });
 
       if (!res.ok) {
@@ -94,7 +103,7 @@ export default function EditarCategoriaPage() {
         <DeleteCategoriaButton categoriaId={params.id as string} />
       </div>
 
-      <form name="formCategoria" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Informacoes</CardTitle>
@@ -113,6 +122,8 @@ export default function EditarCategoriaPage() {
                 name="nome"
                 required
                 maxLength={100}
+                value={form.nome}
+                onChange={handleChange}
                 placeholder="Ex: Camisetas, Calcas, Vestidos"
               />
             </div>

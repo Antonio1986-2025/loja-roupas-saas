@@ -9,6 +9,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 
+type FormData = {
+  nome: string;
+  cpf: string;
+  telefone: string;
+  email: string;
+  cargo: string;
+  salario: string;
+  dataAdmissao: string;
+  dataDemissao: string;
+  ativo: boolean;
+};
+
+const FORM_VAZIO: FormData = {
+  nome: "",
+  cpf: "",
+  telefone: "",
+  email: "",
+  cargo: "",
+  salario: "",
+  dataAdmissao: "",
+  dataDemissao: "",
+  ativo: true,
+};
+
 export default function EditarFuncionarioPage() {
   const router = useRouter();
   const params = useParams();
@@ -16,6 +40,7 @@ export default function EditarFuncionarioPage() {
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
   const [erro, setErro] = useState("");
+  const [form, setForm] = useState<FormData>(FORM_VAZIO);
 
   useEffect(() => {
     async function carregar() {
@@ -26,20 +51,17 @@ export default function EditarFuncionarioPage() {
           return;
         }
         const data = await res.json();
-        const form = document.forms.namedItem("formFuncionario") as HTMLFormElement;
-        if (form) {
-          (form.elements.namedItem("nome") as HTMLInputElement).value = data.nome;
-          (form.elements.namedItem("cpf") as HTMLInputElement).value = data.cpf;
-          (form.elements.namedItem("telefone") as HTMLInputElement).value = data.telefone || "";
-          (form.elements.namedItem("email") as HTMLInputElement).value = data.email || "";
-          (form.elements.namedItem("cargo") as HTMLInputElement).value = data.cargo || "";
-          (form.elements.namedItem("salario") as HTMLInputElement).value = data.salario || "";
-          (form.elements.namedItem("dataAdmissao") as HTMLInputElement).value =
-            data.dataAdmissao?.split("T")[0] || "";
-          (form.elements.namedItem("dataDemissao") as HTMLInputElement).value =
-            data.dataDemissao?.split("T")[0] || "";
-          (form.elements.namedItem("ativo") as HTMLInputElement).checked = data.ativo;
-        }
+        setForm({
+          nome:         data.nome ?? "",
+          cpf:          data.cpf ?? "",
+          telefone:     data.telefone ?? "",
+          email:        data.email ?? "",
+          cargo:        data.cargo ?? "",
+          salario:      data.salario != null ? String(data.salario) : "",
+          dataAdmissao: data.dataAdmissao ? data.dataAdmissao.split("T")[0] : "",
+          dataDemissao: data.dataDemissao ? data.dataDemissao.split("T")[0] : "",
+          ativo:        Boolean(data.ativo),
+        });
       } catch {
         router.push("/funcionarios");
       } finally {
@@ -49,22 +71,25 @@ export default function EditarFuncionarioPage() {
     carregar();
   }, [params.id, router]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
     setSalvando(true);
 
-    const form = new FormData(e.currentTarget);
     const data = {
-      nome: form.get("nome") as string,
-      cpf: form.get("cpf") as string,
-      telefone: form.get("telefone") as string,
-      email: form.get("email") as string,
-      cargo: form.get("cargo") as string,
-      salario: form.get("salario") as string,
-      dataAdmissao: form.get("dataAdmissao") as string,
-      dataDemissao: form.get("dataDemissao") as string,
-      ativo: form.get("ativo") === "on",
+      nome: form.nome,
+      cpf: form.cpf,
+      telefone: form.telefone,
+      email: form.email,
+      cargo: form.cargo,
+      salario: form.salario,
+      dataAdmissao: form.dataAdmissao,
+      dataDemissao: form.dataDemissao,
+      ativo: form.ativo,
     };
 
     try {
@@ -153,7 +178,7 @@ export default function EditarFuncionarioPage() {
         </Button>
       </div>
 
-      <form name="formFuncionario" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Informações do Funcionário</CardTitle>
@@ -168,7 +193,7 @@ export default function EditarFuncionarioPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="nome">Nome *</Label>
-                <Input id="nome" name="nome" required placeholder="Nome completo" />
+                <Input id="nome" name="nome" required value={form.nome} onChange={handleChange} placeholder="Nome completo" />
               </div>
 
               <div className="space-y-2">
@@ -177,6 +202,8 @@ export default function EditarFuncionarioPage() {
                   id="cpf"
                   name="cpf"
                   required
+                  value={form.cpf}
+                  onChange={handleChange}
                   placeholder="000.000.000-00"
                 />
               </div>
@@ -186,6 +213,8 @@ export default function EditarFuncionarioPage() {
                 <Input
                   id="telefone"
                   name="telefone"
+                  value={form.telefone}
+                  onChange={handleChange}
                   placeholder="(11) 99999-9999"
                 />
               </div>
@@ -196,6 +225,8 @@ export default function EditarFuncionarioPage() {
                   id="email"
                   name="email"
                   type="email"
+                  value={form.email}
+                  onChange={handleChange}
                   placeholder="funcionario@exemplo.com"
                 />
               </div>
@@ -205,6 +236,8 @@ export default function EditarFuncionarioPage() {
                 <Input
                   id="cargo"
                   name="cargo"
+                  value={form.cargo}
+                  onChange={handleChange}
                   placeholder="Ex: Vendedor, Caixa"
                 />
               </div>
@@ -216,6 +249,8 @@ export default function EditarFuncionarioPage() {
                   name="salario"
                   type="number"
                   step="0.01"
+                  value={form.salario}
+                  onChange={handleChange}
                   placeholder="1500,00"
                 />
               </div>
@@ -227,6 +262,8 @@ export default function EditarFuncionarioPage() {
                   name="dataAdmissao"
                   type="date"
                   required
+                  value={form.dataAdmissao}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -236,6 +273,8 @@ export default function EditarFuncionarioPage() {
                   id="dataDemissao"
                   name="dataDemissao"
                   type="date"
+                  value={form.dataDemissao}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -244,6 +283,8 @@ export default function EditarFuncionarioPage() {
                   id="ativo"
                   name="ativo"
                   type="checkbox"
+                  checked={form.ativo}
+                  onChange={(e) => setForm((p) => ({ ...p, ativo: e.target.checked }))}
                   className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
                 />
                 <Label htmlFor="ativo" className="cursor-pointer">Funcionário ativo</Label>

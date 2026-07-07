@@ -39,12 +39,22 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "NAO_AUTENTICADO" }, { status: 401 });
 
   try {
-    await receberConta(session.user.tenantId, params.id);
+    const body = await req.json().catch(() => ({}));
+    await receberConta(session.user.tenantId, params.id, {
+      dataPagamento: body.dataPagamento || new Date().toISOString().split("T")[0],
+      valorPago: Number(body.valorPago) || 0,
+      juros: Number(body.juros) || 0,
+      multa: Number(body.multa) || 0,
+      desconto: Number(body.desconto) || 0,
+      formaPagamento: body.formaPagamento,
+      numeroDocumento: body.numeroDocumento,
+      observacoes: body.observacoes,
+    });
     return NextResponse.json({ message: "Conta marcada como recebida" });
   } catch (error) {
     if (error instanceof ContaReceberError) {

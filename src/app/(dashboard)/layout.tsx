@@ -5,12 +5,15 @@ import { SessionProvider } from "next-auth/react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { TrialBanner } from "@/components/trial-banner";
+import { usePlano } from "@/hooks/use-plano";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  usePlano();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -27,6 +30,7 @@ export default function DashboardLayout({
         </Sheet>
 
         <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+          <TrialBanner />
           <Header onMenuClick={() => setSidebarOpen(true)} />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
             {children}

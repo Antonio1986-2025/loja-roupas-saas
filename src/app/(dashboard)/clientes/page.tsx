@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, X, Loader2, Users, Phone, Mail, ShoppingBag, Wallet, ArrowUpDown } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { ImportClientesButton } from "@/components/import-clientes-button";
 
 type ClienteItem = {
   id: string;
@@ -68,12 +69,15 @@ export default function ClientesPage() {
             {carregando ? "Carregando..." : `${total} cliente(s) encontrado(s)`}
           </p>
         </div>
-        <Button asChild className="shrink-0">
-          <Link href="/clientes/novo">
-            <Users className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Novo Cliente</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ImportClientesButton onSuccess={() => fetchClientes(1, busca, orderBy)} />
+          <Button asChild className="shrink-0">
+            <Link href="/clientes/novo">
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Novo Cliente</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

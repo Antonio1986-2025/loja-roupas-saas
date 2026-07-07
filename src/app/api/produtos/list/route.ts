@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { fotoUrl } from "@/lib/google-drive";
 import type { Genero } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
   const categoriaId = url.searchParams.get("categoriaId") || "";
   const genero = url.searchParams.get("genero") || "";
   const estoqueBaixo = url.searchParams.get("estoqueBaixo") === "true";
+  const apenasComEstoque = url.searchParams.get("apenasComEstoque") === "true";
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 20));
   const skip = (page - 1) * limit;
@@ -22,15 +24,22 @@ export async function GET(req: NextRequest) {
   const where: any = { tenantId: session.user.tenantId };
 
   if (q) {
-    where.OR = [
-      { nome: { contains: q, mode: "insensitive" } },
-      { codigoInterno: { contains: q, mode: "insensitive" } },
-      { codigoFornecedor: { contains: q, mode: "insensitive" } },
-      { variantes: { some: { codigoBarras: { contains: q, mode: "insensitive" } } } },
-    ];
+    const words = q.split(/\s+/).filter(Boolean);
+    where.AND = words.map((word) => ({
+      OR: [
+        { nome: { contains: word, mode: "insensitive" } },
+        { descricao: { contains: word, mode: "insensitive" } },
+        { codigoInterno: { contains: word, mode: "insensitive" } },
+        { codigoFornecedor: { contains: word, mode: "insensitive" } },
+        { variantes: { some: { codigoBarras: { contains: word, mode: "insensitive" } } } },
+      ],
+    }));
   }
   if (categoriaId) where.categoriaId = categoriaId;
   if (genero) where.genero = genero as Genero;
+  if (apenasComEstoque) {
+    where.variantes = { some: { qtdEstoque: { gt: 0 } } };
+  }
 
   try {
     const [produtos, total] = await Promise.all([
@@ -69,7 +78,7 @@ export async function GET(req: NextRequest) {
         genero: p.genero,
         precoVenda: Number(p.precoVenda),
         precoCusto: p.precoCusto ? Number(p.precoCusto) : null,
-        fotoUrl: p.fotoUrl,
+        fotoUrl: fotoUrl(p.fotoUrl, "thumb"),
         ativo: p.ativo,
         categoria: p.categoria ? { nome: p.categoria.nome } : null,
         qtdVariantes: p.variantes.length,

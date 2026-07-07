@@ -1,0 +1,129 @@
+/* =====================================================
+   ETIQUETAS — Pimaco A4356 equivalente
+   3 colunas x 11 linhas = 33 etiquetas por folha A4
+   63.5mm x 25.4mm por etiqueta
+   ===================================================== */
+
+@media print {
+  @page { size: A4 portrait; margin: 8.5mm 6.95mm; }
+  html, body { margin: 0; padding: 0; background: white; }
+  .no-print { display: none !important; }
+  .etiqueta-folha { width: 196.1mm; margin: 0; padding: 0; }
+}
+
+.etiqueta-folha {
+  width: 210mm;
+  background: white;
+  margin: 0 auto;
+}
+
+/* Grid principal */
+.etiqueta-grid {
+  width: 196.1mm;
+  display: grid;
+  grid-template-columns: repeat(3, 63.5mm);
+  grid-template-rows: repeat(11, 25.4mm);
+  column-gap: 2.8mm;
+  row-gap: 0;
+}
+
+.etiqueta-vazia {
+  width: 63.5mm;
+  height: 25.4mm;
+}
+
+/* ===== ETIQUETA INDIVIDUAL (63.5 x 25.4mm) ===== */
+.etiqueta-item {
+  width: 63.5mm;
+  height: 25.4mm;
+  box-sizing: border-box;
+  border: 0.3pt solid #bbb;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: white;
+  font-family: Arial, Helvetica, sans-serif;
+  page-break-inside: avoid;
+}
+
+/* Topo: nome da loja + nome do produto */
+.etiqueta-header {
+  border-bottom: 0.6pt solid #333;
+  padding: 0.7mm 1.2mm 0.5mm;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.etiqueta-loja {
+  font-size: 4.5pt;
+  color: #888;
+  letter-spacing: 0.4pt;
+  text-transform: uppercase;
+}
+
+.etiqueta-nome {
+  font-size: 7pt;
+  font-weight: 700;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Corpo: QR esquerda, dados direita */
+.etiqueta-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0.5mm 1.2mm 0.5mm;
+  gap: 1.5mm;
+}
+
+.etiqueta-qr {
+  flex-shrink: 0;
+  width: 16mm;
+  height: 16mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.etiqueta-qr svg {
+  width: 16mm !important;
+  height: 16mm !important;
+}
+
+.etiqueta-dados {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4mm;
+  min-width: 0;
+}
+
+.etiqueta-variante {
+  font-size: 6.5pt;
+  font-weight: 700;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.etiqueta-preco {
+  font-size: 11.5pt;
+  font-weight: 900;
+  color: #000;
+  line-height: 1;
+  letter-spacing: -0.3pt;
+}
+
+.etiqueta-ref {
+  font-size: 5.5pt;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

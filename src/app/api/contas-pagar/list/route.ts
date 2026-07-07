@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const q = url.searchParams.get("q")?.trim() || "";
   const status = url.searchParams.get("status") || "";
   const categoria = url.searchParams.get("categoria") || "";
+  const fornecedorId = url.searchParams.get("fornecedorId") || "";
   const startDate = url.searchParams.get("startDate") || "";
   const endDate = url.searchParams.get("endDate") || "";
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
@@ -22,16 +23,14 @@ export async function GET(req: NextRequest) {
   const where: any = { tenantId: session.user.tenantId };
 
   if (q) {
-    where.descricao = { contains: q, mode: "insensitive" };
+    where.OR = [
+      { descricao: { contains: q, mode: "insensitive" } },
+      { fornecedor: { nome: { contains: q, mode: "insensitive" } } },
+    ];
   }
-
-  if (status === "PENDENTE" || status === "PAGO") {
-    where.status = status;
-  }
-
-  if (categoria) {
-    where.categoria = categoria;
-  }
+  if (status === "PENDENTE" || status === "PAGO") where.status = status;
+  if (categoria) where.categoria = categoria;
+  if (fornecedorId) where.fornecedorId = fornecedorId;
 
   if (startDate || endDate) {
     where.dataVencimento = {};

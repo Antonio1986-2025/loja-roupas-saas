@@ -54,10 +54,11 @@ export default function VendasPage() {
   const [formaFiltro, setFormaFiltro] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
+  const [produtoFiltro, setProdutoFiltro] = useState("");
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
   const fetchVendas = useCallback(async (
-    p: number, q: string, st: string, fp: string, di: string, df: string
+    p: number, q: string, st: string, fp: string, di: string, df: string, prod: string
   ) => {
     setCarregando(true);
     try {
@@ -69,6 +70,7 @@ export default function VendasPage() {
       if (fp) params.set("formaPagamento", fp);
       if (di) params.set("startDate", di);
       if (df) params.set("endDate", df);
+    if (prod) params.set("produto", prod);
 
       const res = await fetch(`/api/vendas/list?${params}`);
       if (res.ok) {
@@ -84,11 +86,11 @@ export default function VendasPage() {
 
   useEffect(() => {
     setPage(1);
-    fetchVendas(1, busca, statusFiltro, formaFiltro, dataInicio, dataFim);
-  }, [busca, statusFiltro, formaFiltro, dataInicio, dataFim, fetchVendas]);
+    fetchVendas(1, busca, statusFiltro, formaFiltro, dataInicio, dataFim, produtoFiltro);
+  }, [busca, statusFiltro, formaFiltro, dataInicio, dataFim, produtoFiltro, fetchVendas]);
 
   useEffect(() => {
-    if (page > 1) fetchVendas(page, busca, statusFiltro, formaFiltro, dataInicio, dataFim);
+    if (page > 1) fetchVendas(page, busca, statusFiltro, formaFiltro, dataInicio, dataFim, produtoFiltro);
   }, [page]);
 
   return (
@@ -175,6 +177,26 @@ export default function VendasPage() {
               Limpar datas
             </Button>
           )}
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Produto (nome ou código)</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={produtoFiltro}
+                onChange={(e) => setProdutoFiltro(e.target.value)}
+                placeholder="Ex: CAMISA TXC ou CM031"
+                className="h-9 rounded-md border border-input bg-background px-3 pr-8 text-sm w-full sm:w-64"
+              />
+              {produtoFiltro && (
+                <button
+                  onClick={() => setProdutoFiltro("")}
+                  className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -187,12 +209,12 @@ export default function VendasPage() {
           <CardContent className="flex flex-col items-center justify-center py-16">
             <TrendingUp className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {busca || statusFiltro || formaFiltro || dataInicio || dataFim
+              {busca || statusFiltro || formaFiltro || dataInicio || dataFim || produtoFiltro
                 ? "Nenhuma venda encontrada"
                 : "Nenhuma venda registrada"}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {busca || statusFiltro || formaFiltro || dataInicio || dataFim
+              {busca || statusFiltro || formaFiltro || dataInicio || dataFim || produtoFiltro
                 ? "Tente ajustar os filtros"
                 : "As vendas realizadas no PDV aparecerão aqui"}
             </p>

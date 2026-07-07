@@ -128,6 +128,9 @@ export default function CategoriasPage() {
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" asChild>
+                        <Link href={`/etiquetas?categoriaId=${categoria.id}`}>🏷️ Etiquetas</Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
                         <Link href={`/categorias/${categoria.id}`}>Editar</Link>
                       </Button>
                       <DeleteCategoriaButton categoriaId={categoria.id} />

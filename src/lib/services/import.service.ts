@@ -1,16 +1,10 @@
 import prisma from "@/lib/prisma";
+import { converterUrlGoogleDrive } from "@/lib/google-drive";
 import { parse } from "csv-parse/sync";
 import fs from "fs";
 import type { Genero } from "@prisma/client";
 
-function converterUrlGoogleDrive(url: string | null): string | null {
-  if (!url) return null;
-  const match = url.match(/\/file\/d\/([^\/]+)/);
-  if (match) {
-    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-  }
-  return url;
-}
+
 
 interface ImportRow {
   codigo_interno: string;

@@ -4,6 +4,7 @@ import type {
   CreateVendaCondicionalInput,
   FinalizarVendaCondicionalInput,
 } from "@/lib/validations/venda-condicional";
+import { calcularDataVencimento, calcularSubtotalItem, temEstoqueDisponivel } from "@/lib/calculations/condicional";
 
 type FormaPagamento = "DINHEIRO" | "DEBITO" | "CREDITO" | "PIX" | "BOLETO";
 
@@ -122,7 +123,7 @@ export async function criarVendaCondicional(
       if (!variante) {
         throw new VendaCondicionalError("VARIANTE_NAO_ENCONTRADA", "Produto não encontrado");
       }
-      if (variante.qtdDisponivel < item.quantidade) {
+      if (!temEstoqueDisponivel(variante.qtdDisponivel, item.quantidade)) {
         throw new VendaCondicionalError(
           "ESTOQUE_INSUFICIENTE",
           `Estoque insuficiente para ${variante.produto.nome}`
@@ -134,7 +135,7 @@ export async function criarVendaCondicional(
         varianteId: item.varianteId,
         quantidade: item.quantidade,
         precoUnit: preco,
-        subtotal: new Prisma.Decimal(preco).mul(item.quantidade),
+        subtotal: calcularSubtotalItem(preco, item.quantidade),
       });
     }
 
@@ -148,8 +149,7 @@ export async function criarVendaCondicional(
 
     // 4. Datas
     const dataSaida = new Date();
-    const dataVencimento = new Date(dataSaida);
-    dataVencimento.setDate(dataVencimento.getDate() + data.prazoDias);
+    const dataVencimento = calcularDataVencimento(dataSaida, data.prazoDias);
 
     // 5. Criar condicional + itens
     const condicional = await tx.vendaCondicional.create({

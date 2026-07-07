@@ -88,13 +88,13 @@ export default function NovoClientePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cpf">CPF</Label>
-                <Input id="cpf" name="cpf" placeholder="000.000.000-00" />
+                <Label htmlFor="cpf">CPF *</Label>
+                <Input id="cpf" name="cpf" required placeholder="01646407113" />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone</Label>
-                <Input id="telefone" name="telefone" placeholder="(11) 99999-9999" />
+                <Label htmlFor="telefone">Telefone *</Label>
+                <Input id="telefone" name="telefone" required placeholder="(11) 99999-9999" />
               </div>
 
               <div className="sm:col-span-2 space-y-2">

@@ -10,28 +10,45 @@ export async function GET(req: NextRequest) {
   }
 
   const url = new URL(req.url);
-  const q = url.searchParams.get("q")?.trim() || "";
-  const status = url.searchParams.get("status") || "";
+  const q        = url.searchParams.get("q")?.trim() || "";
+  const status   = url.searchParams.get("status") || "";
   const formaPagamento = url.searchParams.get("formaPagamento") || "";
   const startDate = url.searchParams.get("startDate") || "";
-  const endDate = url.searchParams.get("endDate") || "";
-  const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+  const endDate   = url.searchParams.get("endDate") || "";
+  const produto   = url.searchParams.get("produto")?.trim() || "";
+  const page  = Math.max(1, Number(url.searchParams.get("page")) || 1);
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 20));
-  const skip = (page - 1) * limit;
+  const skip  = (page - 1) * limit;
 
   const where: any = { tenantId: session.user.tenantId };
 
   if (status) where.status = status;
   if (formaPagamento) where.formaPagamento = formaPagamento;
   if (startDate) where.createdAt = { ...where.createdAt, gte: new Date(startDate) };
-  if (endDate) where.createdAt = { ...where.createdAt, lte: new Date(endDate + "T23:59:59.999Z") };
+  if (endDate)   where.createdAt = { ...where.createdAt, lte: new Date(endDate + "T23:59:59.999Z") };
 
+  // Busca geral: numero da venda ou nome do cliente
   if (q) {
     const num = Number(q);
     where.OR = [
       { cliente: { nome: { contains: q, mode: "insensitive" } } },
       ...(isNaN(num) ? [] : [{ numero: num }]),
     ];
+  }
+
+  // Busca por produto: nome do produto OU codigo de barras OU codigo interno
+  if (produto) {
+    where.itens = {
+      some: {
+        variante: {
+          OR: [
+            { codigoBarras:  { contains: produto, mode: "insensitive" } },
+            { codigoInterno: { contains: produto, mode: "insensitive" } },
+            { produto: { nome: { contains: produto, mode: "insensitive" } } },
+          ],
+        },
+      },
+    };
   }
 
   try {
@@ -48,7 +65,10 @@ export async function GET(req: NextRequest) {
               },
             },
           },
-          pagamentos: { select: { formaPagamento: true, valor: true } },
+          pagamentos: true,
+          contasReceber: {
+            select: { id: true, valor: true, dataVencimento: true, status: true },
+          },
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -61,15 +81,21 @@ export async function GET(req: NextRequest) {
       id: v.id,
       numero: v.numero,
       status: v.status,
+      formaPagamento: v.formaPagamento,
       subtotal: Number(v.subtotal),
       desconto: Number(v.desconto),
       total: Number(v.total),
-      formaPagamento: v.formaPagamento,
-      observacoes: v.observacoes,
       createdAt: v.createdAt,
       cliente: v.cliente,
-      vendedor: { name: v.vendedor.name },
-      qtdItens: v.itens.reduce((s, i) => s + i.quantidade, 0),
+      vendedor: v.vendedor,
+      itens: v.itens.map((i) => ({
+        id: i.id,
+        nome: i.variante?.produto?.nome ?? "Produto",
+        variante: [i.variante?.cor, i.variante?.tamanho].filter(Boolean).join(" / ") || "—",
+        quantidade: i.quantidade,
+        precoUnit: Number(i.precoUnit),
+        subtotal: Number(i.subtotal),
+      })),
       pagamentos: v.pagamentos.map((p) => ({
         formaPagamento: p.formaPagamento,
         valor: Number(p.valor),

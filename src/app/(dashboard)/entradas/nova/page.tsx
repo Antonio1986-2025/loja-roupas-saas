@@ -9,11 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Loader2, Save, Upload, FileText, Truck, Receipt,
-  Package, CheckCircle2, ChevronLeft, ChevronRight, Search,
+  Package, CheckCircle2, ChevronLeft, ChevronRight, Search, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import type { NFeParseResult } from "@/lib/xml-nfe";
 import { formatCurrency } from "@/lib/utils";
+import { UploadDocumentoEntrada, type DocumentoExtraido } from "@/components/upload-documento-entrada";
 
 type StepProps = {
   step: number;
@@ -55,8 +56,11 @@ type VarianteOption = {
 type ItemForm = {
   nItem: number;
   nomeXML: string;
+  nomeEditado: string;
   codigoProduto: string;
+  codigoBarras: string;
   varianteId: string;
+  categoriaId: string;
   quantidade: number;
   precoUnitario: number;
   margemLucro: string;
@@ -75,6 +79,7 @@ export default function NovaEntradaPage() {
   const [variantes, setVariantes] = useState<VarianteOption[]>([]);
   const [parsedXml, setParsedXml] = useState<NFeParseResult | null>(null);
   const [buscandoXml, setBuscandoXml] = useState(false);
+  const [mostrarUploadIA, setMostrarUploadIA] = useState(false);
 
   // Step 1 - Dados da Nota
   const [xmlContent, setXmlContent] = useState("");
@@ -102,6 +107,7 @@ export default function NovaEntradaPage() {
   const [itens, setItens] = useState<ItemForm[]>([]);
   const [buscaProduto, setBuscaProduto] = useState<Record<number, string>>({});
   const [criandoProdutos, setCriandoProdutos] = useState(false);
+  const [categorias, setCategorias] = useState<{ id: string; nome: string }[]>([]);
 
   // Step 4 - Finalizar
   const [observacao, setObservacao] = useState("");
@@ -109,6 +115,7 @@ export default function NovaEntradaPage() {
 
   useEffect(() => {
     fetch("/api/fornecedores").then((r) => r.ok && r.json()).then(setFornecedores).catch(() => {});
+    fetch("/api/categorias").then((r) => r.ok && r.json()).then(setCategorias).catch(() => {});
     fetch("/api/produtos?all=true").then((r) => r.ok && r.json()).then((prods) => {
       const v: VarianteOption[] = [];
       if (Array.isArray(prods)) {
@@ -150,8 +157,11 @@ export default function NovaEntradaPage() {
     const items = parsed.itens.map((i) => ({
       nItem: i.nItem,
       nomeXML: i.nome,
+      nomeEditado: i.nome,
       codigoProduto: i.codigoProduto,
+      codigoBarras: i.codigoBarras,
       varianteId: "",
+      categoriaId: "",
       quantidade: i.quantidade,
       precoUnitario: i.valorUnitario,
       margemLucro: "",
@@ -177,6 +187,61 @@ export default function NovaEntradaPage() {
       }
     }
   }, []);
+
+  // Aplica dados extraídos pelo upload com IA
+  const applyDocumentoIA = useCallback(async (doc: DocumentoExtraido) => {
+    setMostrarUploadIA(false);
+
+    // Dados do cabeçalho
+    setNumeroNFe(doc.numeroDocumento ?? "");
+    setDataEmissao(doc.dataEmissao ?? "");
+    setValorFrete(doc.valorFrete ? String(doc.valorFrete) : "");
+
+    // Fornecedor — tenta vincular pelo CNPJ
+    if (doc.fornecedor.cnpj) {
+      const cnpjLimpo = doc.fornecedor.cnpj.replace(/\D/g, "");
+      const forc = fornecedores.find((f) => f.cnpj?.replace(/\D/g, "") === cnpjLimpo);
+      if (forc) {
+        setFornecedorId(forc.id);
+      } else if (doc.fornecedor.nome) {
+        // Auto-cadastra fornecedor
+        try {
+          const res = await fetch("/api/fornecedores", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nome: doc.fornecedor.nome, cnpj: cnpjLimpo }),
+          });
+          if (res.ok) {
+            const novo = await res.json();
+            setFornecedores((prev) => [...prev, novo]);
+            setFornecedorId(novo.id);
+          }
+        } catch {/* silencia */}
+      }
+    }
+
+    // Monta itens
+    const novosItens: ItemForm[] = doc.itens.map((item, idx) => ({
+      nItem: idx + 1,
+      nomeXML: [item.descricao, item.marca, item.cor, item.tamanho].filter(Boolean).join(" "),
+      nomeEditado: [item.descricao, item.marca, item.cor, item.tamanho].filter(Boolean).join(" "),
+      codigoProduto: item.codigo ?? `IA-${idx + 1}`,
+      codigoBarras: "",
+      varianteId: "",
+      categoriaId: "",
+      quantidade: item.quantidade,
+      precoUnitario: item.precoUnitario,
+      margemLucro: "",
+      precoVendaManual: "",
+      valorICMS: 0,
+      valorPIS: 0,
+      valorCOFINS: 0,
+    }));
+    setItens(novosItens);
+
+    // Vai direto para o step de produtos
+    setStep(3);
+  }, [fornecedores]);
 
   async function handleXmlUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -248,6 +313,18 @@ export default function NovaEntradaPage() {
     );
   }
 
+  function updateNomeEditado(nItem: number, nomeEditado: string) {
+    setItens((prev) =>
+      prev.map((i) => (i.nItem === nItem ? { ...i, nomeEditado } : i))
+    );
+  }
+
+  function updateCategoriaId(nItem: number, categoriaId: string) {
+    setItens((prev) =>
+      prev.map((i) => (i.nItem === nItem ? { ...i, categoriaId } : i))
+    );
+  }
+
   function updatePrecoVendaManual(nItem: number, value: string) {
     const cleaned = value.replace(/[^\d.,]/g, "").replace(",", ".");
     setItens((prev) =>
@@ -275,22 +352,42 @@ export default function NovaEntradaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "auto-criar-produtos",
+          fornecedorId: fornecedorId || null,
           itens: itens.map((i) => ({
             nItem: i.nItem,
-            nome: i.nomeXML,
+            nome: i.nomeEditado || i.nomeXML,
             codigoProduto: i.codigoProduto,
+            codigoBarras: i.codigoBarras || null,
             precoUnitario: i.precoUnitario,
+            categoriaId: i.categoriaId || null,
           })),
         }),
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        console.error("[auto-criar-produtos]", errJson);
+        setErro(errJson.message || errJson.error || "Falha ao criar produtos automaticamente");
+        return null;
+      }
       const data = await res.json();
       const map = new Map<number, string>();
-      for (const item of data.itens) {
-        if (item.varianteId) map.set(item.nItem, item.varianteId);
+      const erros: string[] = [];
+      for (const item of data.itens ?? []) {
+        if (item.varianteId) {
+          map.set(item.nItem, item.varianteId);
+        } else if (item.erro) {
+          erros.push(`Item ${item.nItem}: ${item.erro}`);
+        }
+      }
+      if (erros.length > 0 && map.size === 0) {
+        setErro(`Erros ao criar produtos:\n${erros.slice(0, 3).join("\n")}`);
       }
       return map;
-    } catch { return null; }
+    } catch (e: unknown) {
+      console.error("[auto-criar-produtos] catch:", e);
+      setErro("Erro de conexão ao criar produtos");
+      return null;
+    }
   }
 
   async function refreshVariantes() {
@@ -530,6 +627,37 @@ export default function NovaEntradaPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+
+              {/* Upload com IA */}
+              {mostrarUploadIA ? (
+                <div className="rounded-xl border bg-muted/30 p-4">
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Leitura automática por IA
+                  </p>
+                  <UploadDocumentoEntrada
+                    onConfirmar={applyDocumentoIA}
+                    onCancelar={() => setMostrarUploadIA(false)}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setMostrarUploadIA(true)}
+                  className="w-full flex items-center gap-3 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 p-4 text-left transition-colors"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Usar IA para ler foto ou PDF</p>
+                    <p className="text-xs text-muted-foreground">
+                      Envie uma foto da nota, pedido ou orçamento — a IA extrai os dados automaticamente
+                    </p>
+                  </div>
+                </button>
+              )}
+
               <div className="rounded-lg border border-dashed p-6">
                 <Label className="mb-2 block text-sm font-medium">Importar XML da NF-e</Label>
                 <p className="text-xs text-muted-foreground mb-3">
@@ -756,12 +884,44 @@ export default function NovaEntradaPage() {
                       <div key={item.nItem} className="rounded-lg border p-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <p className="font-medium text-sm">#{item.nItem} — {item.nomeXML}</p>
+                            <p className="font-medium text-sm">#{item.nItem} — <span className="italic text-muted-foreground">{item.nomeXML}</span></p>
                             <p className="text-xs text-muted-foreground">
                               Cód. fornecedor: {item.codigoProduto} · Qtd: {item.quantidade} · {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.precoUnitario)}/un
                             </p>
                           </div>
                         </div>
+
+                        {/* Campo editar nome — SEMPRE visível para itens sem variante vinculada */}
+                        {!selected && (
+                          <div className="rounded-md bg-amber-50 border-2 border-amber-300 p-3 space-y-1.5">
+                            <p className="text-xs font-bold text-amber-900 flex items-center gap-1">
+                              ✏️ PRODUTO NOVO — defina o nome antes de finalizar
+                            </p>
+                            <Input
+                              className="text-sm bg-white font-medium border-amber-300 focus:border-amber-500"
+                              placeholder="Ex: CALCA JEANS WRANGLER MASCULINO"
+                              value={item.nomeEditado ?? item.nomeXML}
+                              onChange={(e) => updateNomeEditado(item.nItem, e.target.value)}
+                              autoComplete="off"
+                            />
+                            <div>
+                              <Label className="text-[11px] text-amber-700">Categoria</Label>
+                              <select
+                                className="mt-1 w-full rounded-md border border-amber-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                value={item.categoriaId}
+                                onChange={(e) => updateCategoriaId(item.nItem, e.target.value)}
+                              >
+                                <option value="">Sem categoria</option>
+                                {categorias.map((cat) => (
+                                  <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <p className="text-[11px] text-amber-700">
+                              Nome original do arquivo: <em>{item.nomeXML}</em>
+                            </p>
+                          </div>
+                        )}
 
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div className="space-y-1 relative">

@@ -5,11 +5,11 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "California Store - ERP para Lojas de Roupas",
-  description: "Sistema completo de gestão para lojas de roupas",
+  title: "Stori - Gestão para Lojas",
+  description: "Stori — Gestão simples para lojas que crescem",
   manifest: "/manifest.json",
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
-  appleWebApp: { capable: true, title: "Calif. Store", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Stori", statusBarStyle: "black-translucent" },
   other: { "mobile-web-app-capable": "yes", "apple-mobile-web-app-capable": "yes" },
 };
 

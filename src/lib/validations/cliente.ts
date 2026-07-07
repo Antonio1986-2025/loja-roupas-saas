@@ -4,10 +4,9 @@ export const createClienteSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório").max(200, "Nome muito longo"),
   cpf: z
     .string()
-    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido (use 000.000.000-00)")
-    .optional()
-    .or(z.literal("")),
-  telefone: z.string().max(20, "Telefone muito longo").optional().or(z.literal("")),
+    .min(1, "CPF é obrigatório")
+    .regex(/^(\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})$/, "CPF inválido (use 01646407113 ou 016.464.071-13)"),
+  telefone: z.string().min(1, "Telefone é obrigatório").max(20, "Telefone muito longo"),
   email: z.string().email("Email inválido").max(200, "Email muito longo").optional().or(z.literal("")),
   dataNascimento: z.string().optional().or(z.literal("")),
   endereco: z.string().max(300, "Endereço muito longo").optional().or(z.literal("")),

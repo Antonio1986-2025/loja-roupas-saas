@@ -1,12 +1,11 @@
 {
-  "name": "California Store ERP",
-  "short_name": "Calif. Store",
-  "description": "ERP para lojas de roupas — PDV, estoque, financeiro",
-  "start_url": "/",
+  "name": "Stori - Gestão para Lojas",
+  "short_name": "Stori",
+  "description": "Gestão simples para lojas que crescem",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#18181a",
-  "orientation": "portrait-primary",
+  "theme_color": "#3b82f6",
   "icons": [
     {
       "src": "/icon.svg",

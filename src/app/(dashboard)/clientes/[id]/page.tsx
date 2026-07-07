@@ -17,6 +17,25 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+type FormData = {
+  nome: string;
+  cpf: string;
+  telefone: string;
+  email: string;
+  dataNascimento: string;
+  endereco: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  observacoes: string;
+};
+
+const FORM_VAZIO: FormData = {
+  nome: "", cpf: "", telefone: "", email: "",
+  dataNascimento: "", endereco: "", cidade: "",
+  estado: "", cep: "", observacoes: "",
+};
+
 export default function ClienteDetalhePage() {
   const router = useRouter();
   const params = useParams();
@@ -27,32 +46,27 @@ export default function ClienteDetalhePage() {
   const [erroDelete, setErroDelete] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [cliente, setCliente] = useState<any>(null);
+  const [form, setForm] = useState<FormData>(FORM_VAZIO);
 
   useEffect(() => {
     async function carregar() {
       try {
         const res = await fetch(`/api/clientes/${params.id}`);
-        if (!res.ok) {
-          router.push("/clientes");
-          return;
-        }
+        if (!res.ok) { router.push("/clientes"); return; }
         const data = await res.json();
         setCliente(data);
-        const form = document.forms.namedItem("formCliente") as HTMLFormElement;
-        if (form) {
-          (form.elements.namedItem("nome") as HTMLInputElement).value = data.nome;
-          (form.elements.namedItem("cpf") as HTMLInputElement).value = data.cpf || "";
-          (form.elements.namedItem("telefone") as HTMLInputElement).value = data.telefone || "";
-          (form.elements.namedItem("email") as HTMLInputElement).value = data.email || "";
-          (form.elements.namedItem("dataNascimento") as HTMLInputElement).value =
-            data.dataNascimento?.split("T")[0] || "";
-          (form.elements.namedItem("endereco") as HTMLInputElement).value = data.endereco || "";
-          (form.elements.namedItem("cidade") as HTMLInputElement).value = data.cidade || "";
-          (form.elements.namedItem("estado") as HTMLInputElement).value = data.estado || "";
-          (form.elements.namedItem("cep") as HTMLInputElement).value = data.cep || "";
-          (form.elements.namedItem("observacoes") as HTMLTextAreaElement).value =
-            data.observacoes || "";
-        }
+        setForm({
+          nome:           data.nome          ?? "",
+          cpf:            data.cpf           ?? "",
+          telefone:       data.telefone      ?? "",
+          email:          data.email         ?? "",
+          dataNascimento: data.dataNascimento ? data.dataNascimento.split("T")[0] : "",
+          endereco:       data.endereco      ?? "",
+          cidade:         data.cidade        ?? "",
+          estado:         data.estado        ?? "",
+          cep:            data.cep           ?? "",
+          observacoes:    data.observacoes   ?? "",
+        });
       } catch {
         router.push("/clientes");
       } finally {
@@ -62,38 +76,25 @@ export default function ClienteDetalhePage() {
     carregar();
   }, [params.id, router]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
     setSalvando(true);
-
-    const form = new FormData(e.currentTarget);
-    const data = {
-      nome: form.get("nome") as string,
-      cpf: form.get("cpf") as string,
-      telefone: form.get("telefone") as string,
-      email: form.get("email") as string,
-      dataNascimento: form.get("dataNascimento") as string,
-      endereco: form.get("endereco") as string,
-      cidade: form.get("cidade") as string,
-      estado: form.get("estado") as string,
-      cep: form.get("cep") as string,
-      observacoes: form.get("observacoes") as string,
-    };
-
     try {
       const res = await fetch(`/api/clientes/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(form),
       });
-
       if (!res.ok) {
         const err = await res.json();
         setErro(err.message || "Erro ao atualizar cliente");
         return;
       }
-
       router.refresh();
     } catch {
       setErro("Erro de conexão. Tente novamente.");
@@ -105,16 +106,13 @@ export default function ClienteDetalhePage() {
   async function handleExcluir() {
     setErroDelete("");
     setExcluindo(true);
-
     try {
       const res = await fetch(`/api/clientes/${params.id}`, { method: "DELETE" });
-
       if (!res.ok) {
         const err = await res.json();
         setErroDelete(err.message || "Erro ao excluir cliente");
         return;
       }
-
       router.push("/clientes");
       router.refresh();
     } catch {
@@ -137,9 +135,7 @@ export default function ClienteDetalhePage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/clientes">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
+            <Link href="/clientes"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{cliente?.nome}</h1>
@@ -147,84 +143,67 @@ export default function ClienteDetalhePage() {
           </div>
         </div>
         <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-          <Trash2 className="mr-2 h-4 w-4" />
-          Excluir
+          <Trash2 className="mr-2 h-4 w-4" /> Excluir
         </Button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Vendas</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-sm font-medium">Vendas</CardTitle></CardHeader>
           <CardContent className="flex items-center gap-3">
             <ShoppingBag className="h-8 w-8 text-muted-foreground" />
             <p className="text-2xl font-bold">{cliente?._count?.vendas ?? 0}</p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Condicionais</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-sm font-medium">Condicionais</CardTitle></CardHeader>
           <CardContent className="flex items-center gap-3">
             <FileText className="h-8 w-8 text-muted-foreground" />
-            <p className="text-2xl font-bold">
-              {cliente?._count?.vendasCondicionais ?? 0}
-            </p>
+            <p className="text-2xl font-bold">{cliente?._count?.vendasCondicionais ?? 0}</p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Cadastrado em</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-3">
+          <CardHeader><CardTitle className="text-sm font-medium">Cadastrado em</CardTitle></CardHeader>
+          <CardContent>
             <p className="text-lg font-semibold">
-              {cliente?.createdAt
-                ? new Date(cliente.createdAt).toLocaleDateString("pt-BR")
-                : "-"}
+              {cliente?.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-BR") : "-"}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <form name="formCliente" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <Card>
-          <CardHeader>
-            <CardTitle>Informações do Cliente</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Informações do Cliente</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {erro && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {erro}
-              </div>
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{erro}</div>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="nome">Nome *</Label>
-                <Input id="nome" name="nome" required placeholder="Nome completo" />
+                <Input id="nome" name="nome" required value={form.nome} onChange={handleChange} placeholder="Nome completo" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="cpf">CPF</Label>
-                <Input id="cpf" name="cpf" placeholder="000.000.000-00" />
+                <Input id="cpf" name="cpf" value={form.cpf} onChange={handleChange} placeholder="000.000.000-00" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="telefone">Telefone</Label>
-                <Input id="telefone" name="telefone" placeholder="(11) 99999-9999" />
+                <Input id="telefone" name="telefone" value={form.telefone} onChange={handleChange} placeholder="(11) 99999-9999" />
               </div>
 
               <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="cliente@exemplo.com" />
+                <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="cliente@exemplo.com" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="dataNascimento">Data de Nascimento</Label>
-                <Input id="dataNascimento" name="dataNascimento" type="date" />
+                <Input id="dataNascimento" name="dataNascimento" type="date" value={form.dataNascimento} onChange={handleChange} />
               </div>
             </div>
 
@@ -233,22 +212,19 @@ export default function ClienteDetalhePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2 space-y-2">
                   <Label htmlFor="endereco">Endereço</Label>
-                  <Input id="endereco" name="endereco" placeholder="Rua, número, bairro" />
+                  <Input id="endereco" name="endereco" value={form.endereco} onChange={handleChange} placeholder="Rua, número, bairro" />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="cidade">Cidade</Label>
-                  <Input id="cidade" name="cidade" placeholder="São Paulo" />
+                  <Input id="cidade" name="cidade" value={form.cidade} onChange={handleChange} placeholder="São Paulo" />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="estado">Estado</Label>
-                  <Input id="estado" name="estado" placeholder="SP" />
+                  <Input id="estado" name="estado" value={form.estado} onChange={handleChange} placeholder="SP" />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="cep">CEP</Label>
-                  <Input id="cep" name="cep" placeholder="00000-000" />
+                  <Input id="cep" name="cep" value={form.cep} onChange={handleChange} placeholder="00000-000" />
                 </div>
               </div>
             </div>
@@ -258,6 +234,8 @@ export default function ClienteDetalhePage() {
               <textarea
                 id="observacoes"
                 name="observacoes"
+                value={form.observacoes}
+                onChange={handleChange}
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 placeholder="Informações adicionais..."
                 rows={3}
@@ -269,11 +247,7 @@ export default function ClienteDetalhePage() {
                 <Link href="/clientes">Cancelar</Link>
               </Button>
               <Button type="submit" disabled={salvando}>
-                {salvando ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
+                {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Salvar
               </Button>
             </div>
@@ -289,14 +263,12 @@ export default function ClienteDetalhePage() {
               Esta ação não pode ser desfeita. Se houver vendas vinculadas, a exclusão será bloqueada.
             </DialogDescription>
           </DialogHeader>
-
           {erroDelete && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>{erroDelete}</span>
             </div>
           )}
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={excluindo}>
               {erroDelete ? "Fechar" : "Cancelar"}

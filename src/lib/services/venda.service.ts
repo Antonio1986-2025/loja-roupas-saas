@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { CreateVendaInput } from "@/lib/validations/venda";
+import { calcularSubtotal, calcularTotal, gerarContasReceberMultiplos } from "@/lib/calculations/venda";
 import type { FormaPagamento as FPEnum } from "@prisma/client";
 
 export class VendaError extends Error {
@@ -46,10 +47,17 @@ export async function criarVenda(
         throw new VendaError("VARIANTE_NAO_ENCONTRADA", "Produto não encontrado");
       }
 
-      if (variante.qtdEstoque < item.quantidade) {
+      if (variante.qtdDisponivel < item.quantidade) {
         throw new VendaError(
           "ESTOQUE_INSUFICIENTE",
-          `Estoque insuficiente para ${variante.produto.nome}`
+          `Estoque insuficiente para ${variante.produto.nome}. Disponível: ${variante.qtdDisponivel}`
+        );
+      }
+
+      if (variante.qtdDisponivel <= 0) {
+        throw new VendaError(
+          "SEM_ESTOQUE",
+          `${variante.produto.nome} está sem estoque disponível`
         );
       }
 
@@ -68,12 +76,9 @@ export async function criarVenda(
     });
     const numero = (ultima?.numero ?? 0) + 1;
 
-    const subtotal = itensData.reduce(
-      (acc, item) => acc.add(item.subtotal),
-      new Prisma.Decimal(0)
-    );
+    const subtotal = calcularSubtotal(itensData);
     const desconto = new Prisma.Decimal(data.desconto || 0);
-    const total = subtotal.sub(desconto);
+    const total = calcularTotal(subtotal, desconto);
 
     const pagamentosData = data.pagamentos && data.pagamentos.length > 0
       ? data.pagamentos.map((p) => ({
@@ -172,6 +177,7 @@ export async function criarVenda(
   });
 }
 
+<<<<<<< HEAD
 function gerarContasReceberMultiplos(
   pagamentos: { formaPagamento: FormaPagamento; valor: Prisma.Decimal }[],
   _total: Prisma.Decimal,

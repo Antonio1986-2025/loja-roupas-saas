@@ -67,13 +67,41 @@ export async function atualizarContaPagar(tenantId: string, id: string, data: Up
   });
 }
 
-export async function pagarConta(tenantId: string, id: string) {
+export async function pagarConta(
+  tenantId: string,
+  id: string,
+  dados: {
+    dataPagamento: string;
+    valorPago: number;
+    juros?: number;
+    multa?: number;
+    desconto?: number;
+    formaPagamento?: string;
+    numeroDocumento?: string;
+    observacoes?: string;
+  }
+) {
   const existente = await prisma.contaPagar.findFirst({ where: { id, tenantId } });
   if (!existente) throw new ContaPagarError("NAO_ENCONTRADA", "Conta não encontrada");
+  if (existente.status === "PAGO") throw new ContaPagarError("JA_PAGA", "Conta já foi paga");
 
   await prisma.contaPagar.update({
     where: { id },
-    data: { status: "PAGO", dataPagamento: new Date() },
+    data: {
+      status: "PAGO",
+      dataPagamento: new Date(dados.dataPagamento),
+      valorPago: dados.valorPago,
+      juros: dados.juros ?? 0,
+      multa: dados.multa ?? 0,
+      desconto: dados.desconto ?? 0,
+      formaPagamento: (dados.formaPagamento as any) ?? null,
+      numeroDocumento: dados.numeroDocumento ?? null,
+      observacoes: dados.observacoes
+        ? (existente.observacoes
+            ? `${existente.observacoes}\n[Pagamento] ${dados.observacoes}`
+            : `[Pagamento] ${dados.observacoes}`)
+        : existente.observacoes,
+    },
   });
 }
 

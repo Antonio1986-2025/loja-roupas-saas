@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ArrowLeft, Building2, FileText, Truck, DollarSign, Receipt } from "lucide-react";
+import { ArrowLeft, Building2, FileText, Truck, DollarSign, Receipt, Tag } from "lucide-react";
+import { ComprovanteEntrada } from "@/components/comprovante-entrada";
 
 async function getEntrada(tenantId: string, id: string) {
   const entrada = await prisma.entradaMercadoria.findFirst({
@@ -61,7 +62,7 @@ export default async function EntradaDetalhePage({
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold">Entrada #{entrada.numero}</h1>
           {entrada.numeroNFe && (
             <p className="text-sm text-muted-foreground font-mono">
@@ -69,6 +70,42 @@ export default async function EntradaDetalhePage({
             </p>
           )}
         </div>
+        <Button variant="secondary" size="sm" asChild>
+          <Link href={"/etiquetas?entradaId=" + params.id}>
+            <Tag className="h-4 w-4 mr-1" /> Etiquetas
+          </Link>
+        </Button>
+        <ComprovanteEntrada
+          entrada={{
+            numero: entrada.numero,
+            numeroNFe: entrada.numeroNFe,
+            serieNFe: entrada.serieNFe,
+            dataEmissao: entrada.dataEmissao,
+            createdAt: entrada.createdAt,
+            fornecedor: entrada.fornecedor
+              ? { nome: entrada.fornecedor.nome, cnpj: entrada.fornecedor.cnpj }
+              : null,
+            valorFrete: entrada.valorFrete ? Number(entrada.valorFrete) : null,
+            valorSeguro: entrada.valorSeguro ? Number(entrada.valorSeguro) : null,
+            valorDespesas: entrada.valorDespesas ? Number(entrada.valorDespesas) : null,
+            valorDesconto: null,
+            valorICMS: entrada.valorICMS ? Number(entrada.valorICMS) : null,
+            observacao: entrada.observacao,
+            itens: entrada.itens.map((item) => ({
+              id: item.id,
+              quantidade: item.quantidade,
+              precoUnitario: Number(item.precoUnitario),
+              custoFinal: item.custoFinal ? Number(item.custoFinal) : null,
+              margemLucro: item.margemLucro ? Number(item.margemLucro) : null,
+              precoVendaSugerido: item.precoVendaSugerido ? Number(item.precoVendaSugerido) : null,
+              variante: {
+                cor: item.variante.cor,
+                tamanho: item.variante.tamanho,
+                produto: { nome: item.variante.produto.nome },
+              },
+            })),
+          }}
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

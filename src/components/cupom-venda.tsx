@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowRight } from "lucide-react";
 
@@ -65,6 +66,7 @@ function imprimir() {
 }
 
 export function CupomVenda({ venda, onNovaVenda }: Props) {
+  const { data: session } = useSession();
   const data = new Date(venda.createdAt);
   const dataStr = data.toLocaleDateString("pt-BR") + " " + data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
@@ -74,7 +76,7 @@ export function CupomVenda({ venda, onNovaVenda }: Props) {
         id="cupom-print"
         className="bg-white border rounded-lg p-6 w-full max-w-sm text-sm"
       >
-        <h2 className="text-center font-bold text-base mb-1">CALIFORNIA STORE</h2>
+        <h2 className="text-center font-bold text-base mb-1">{session?.user?.tenantName?.toUpperCase() ?? "STORI"}</h2>
         <p className="text-center text-xs text-muted-foreground mb-3">
           Cupom Não Fiscal
         </p>
@@ -141,6 +143,10 @@ export function CupomVenda({ venda, onNovaVenda }: Props) {
           Nova Venda
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
+        <hr className="border-t border-dashed mt-3" />
+        <p className="text-center text-[10px] text-muted-foreground mt-2 opacity-60">
+          Powered by Stori
+        </p>
       </div>
     </div>
   );

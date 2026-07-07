@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { Genero } from "@prisma/client";
+import { calcularSituacaoEstoque, calcularAjusteEstoque, calcularValorEstoque, calcularTotalUnidades } from "@/lib/calculations/estoque";
 
 export class EstoqueError extends Error {
   code: string;
@@ -24,21 +25,31 @@ export async function listarEstoque(tenantId: string, filtros: ListarFiltros) {
   const { page, limit, q, categoriaId, genero, situacao } = filtros;
   const skip = (page - 1) * limit;
 
-  const produtoWhere: Prisma.ProdutoWhereInput = { tenantId };
-  const whereVar: Prisma.ProdutoVarianteWhereInput = { produto: produtoWhere };
+  const baseProduto: Prisma.ProdutoWhereInput = { tenantId };
+  if (categoriaId) baseProduto.categoriaId = categoriaId;
+  if (genero) (baseProduto as any).genero = genero as Genero;
+
+  let whereVar: Prisma.ProdutoVarianteWhereInput = {};
 
   if (q) {
-    whereVar.OR = [
-      { codigoBarras: { contains: q, mode: "insensitive" } },
-      { codigoInterno: { contains: q, mode: "insensitive" } },
-      { produto: { nome: { contains: q, mode: "insensitive" } } },
-    ];
-  }
-  if (categoriaId) {
-    produtoWhere.categoriaId = categoriaId;
-  }
-  if (genero) {
-    produtoWhere.genero = genero as Genero;
+    const words = q.split(/\s+/).filter(Boolean);
+    whereVar.AND = words.map((word) => ({
+      OR: [
+        { codigoBarras: { contains: word, mode: "insensitive" } },
+        { codigoInterno: { contains: word, mode: "insensitive" } },
+        {
+          produto: {
+            ...baseProduto,
+            OR: [
+              { nome: { contains: word, mode: "insensitive" } },
+              { descricao: { contains: word, mode: "insensitive" } },
+            ],
+          },
+        },
+      ],
+    }));
+  } else {
+    whereVar.produto = baseProduto;
   }
   if (situacao === "zerado") {
     whereVar.qtdEstoque = 0;
@@ -80,11 +91,7 @@ export async function listarEstoque(tenantId: string, filtros: ListarFiltros) {
     qtdCondicional: v.qtdCondicional,
     estoqueMinimo: v.estoqueMinimo,
     precoVenda: v.precoVenda ? Number(v.precoVenda) : Number(v.produto.precoVenda),
-    situacao:
-      v.qtdEstoque === 0 ? "zerado" as const
-      : v.qtdEstoque <= v.estoqueMinimo ? "baixo" as const
-      : v.qtdEstoque > 50 ? "excesso" as const
-      : "normal" as const,
+    situacao: calcularSituacaoEstoque(v.qtdEstoque, v.estoqueMinimo),
   }));
 
   return { data, total, page, totalPages: Math.ceil(total / limit) };
@@ -122,8 +129,11 @@ export async function ajustarEstoque(
   }
 
   return prisma.$transaction(async (tx) => {
-    const diferenca = dados.quantidade - variante.qtdEstoque;
-    const qtdDisponivelNova = Math.max(0, variante.qtdDisponivel + diferenca);
+    const { diferenca, qtdDisponivelNova } = calcularAjusteEstoque(
+      variante.qtdEstoque,
+      variante.qtdDisponivel,
+      dados.quantidade
+    );
 
     await tx.produtoVariante.update({
       where: { id: varianteId },
@@ -183,11 +193,17 @@ export async function obterResumo(tenantId: string) {
     },
   });
 
-  const totalUnidades = variantes.reduce((s, v) => s + v.qtdEstoque, 0);
-  const valorTotal = variantes.reduce(
-    (s, v) => s + (Number(v.precoVenda || v.produto.precoVenda) * v.qtdEstoque),
-    0
+  const totalUnidades = calcularTotalUnidades(variantes);
+  const valorTotal = calcularValorEstoque(
+    variantes.map((v) => ({
+      qtdEstoque: v.qtdEstoque,
+      precoVenda: Number(v.precoVenda || v.produto.precoVenda),
+    }))
   );
+  const valorCusto = variantes.reduce((acc, v) => {
+    const custo = Number(v.produto.precoCusto ?? 0);
+    return acc + custo * v.qtdEstoque;
+  }, 0);
   const totalBaixo = variantes.filter(
     (v) => v.qtdEstoque > 0 && v.qtdEstoque <= v.estoqueMinimo
   ).length;
@@ -203,6 +219,7 @@ export async function obterResumo(tenantId: string) {
   return {
     totalUnidades,
     valorTotal,
+    valorCusto,
     totalVariantes: variantes.length,
     totalBaixo,
     totalZerado,
