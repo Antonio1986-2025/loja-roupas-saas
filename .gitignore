@@ -64,3 +64,4 @@ imports/*.csv
 
 # fotos (upload separado no servidor)
 /public/fotos/
+_env_bak
