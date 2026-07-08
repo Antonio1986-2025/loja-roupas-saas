@@ -21,6 +21,7 @@ export const createVendaSchema = z.object({
       z.object({
         formaPagamento: formaPagamentoEnum,
         valor: z.number().positive("Valor do pagamento deve ser maior que zero"),
+        qtdParcelas: z.number().int().min(1).max(12).optional(),
       })
     )
     .optional(),

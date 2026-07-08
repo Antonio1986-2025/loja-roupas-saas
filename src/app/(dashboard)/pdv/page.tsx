@@ -83,7 +83,7 @@ export default function PdvPage() {
 
   const [formaPagamento, setFormaPagamento] = useState("PIX");
   const [pagamentoMisto, setPagamentoMisto] = useState(false);
-  const [splitPagamentos, setSplitPagamentos] = useState<{ formaPagamento: string; valor: number }[]>([]);
+  const [splitPagamentos, setSplitPagamentos] = useState<{ formaPagamento: string; valor: number; qtdParcelas?: number }[]>([]);
   const [descontoStr, setDescontoStr] = useState("");
   const [tipoDesconto, setTipoDesconto] = useState<"valor" | "porcentagem">("valor");
   const [usarCredito, setUsarCredito] = useState(false);
@@ -299,7 +299,7 @@ export default function PdvPage() {
     try {
       let pagamentosEnvio = pagamentoMisto && splitPagamentos.length > 0
         ? [...splitPagamentos]
-        : [{ formaPagamento, valor: total }];
+        : [{ formaPagamento, valor: total, qtdParcelas }];
 
       if (creditoUsar > 0) {
         const resto = totalEfetivo;
@@ -320,7 +320,6 @@ export default function PdvPage() {
           caixaId: caixaAtual?.id || undefined,
           formaPagamento,
           pagamentos: pagamentosEnvio,
-          qtdParcelas: formaPagamento === "DUPLICATA" ? qtdParcelas : undefined,
           desconto: descontoValor,
           observacoes: observacoes || undefined,
           itens: itens.map((i) => ({
@@ -917,6 +916,27 @@ export default function PdvPage() {
                       }}
                       className="h-9 w-24 text-xs text-right"
                     />
+                    {sp.formaPagamento === "DUPLICATA" && (
+                      <div className="flex gap-0.5 flex-wrap max-w-[140px]">
+                        {[1,2,3,4,5,6,7,8,9,10,11,12].map((n) => (
+                          <button
+                            key={n}
+                            onClick={() => {
+                              const next = [...splitPagamentos];
+                              next[idx] = { ...next[idx], qtdParcelas: n };
+                              setSplitPagamentos(next);
+                            }}
+                            className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
+                              (sp.qtdParcelas || 1) === n
+                                ? "bg-blue-600 text-white"
+                                : "bg-white text-blue-700 hover:bg-blue-100 border border-blue-300"
+                            }`}
+                          >
+                            {n}x
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -935,7 +955,7 @@ export default function PdvPage() {
                     const resto = totalEfetivo - splitPagamentos.reduce((s, p) => s + p.valor, 0);
                     setSplitPagamentos((prev) => [
                       ...prev,
-                      { formaPagamento: "PIX", valor: Math.max(0.01, resto || totalEfetivo) },
+                      { formaPagamento: "PIX", valor: Math.max(0.01, resto || totalEfetivo), qtdParcelas: 1 },
                     ]);
                   }}
                 >

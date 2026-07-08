@@ -61,9 +61,9 @@ export function calcularTroco(
 }
 
 export function gerarContasReceberMultiplos(
-  pagamentos: { formaPagamento: FormaPagamento; valor: Prisma.Decimal }[],
+  pagamentos: { formaPagamento: FormaPagamento; valor: Prisma.Decimal; qtdParcelas?: number | null }[],
   _total: Prisma.Decimal,
-  venda: { id: string; clienteId: string | null; numero: number; qtdParcelas?: number | null },
+  venda: { id: string; clienteId: string | null; numero: number },
   tenantId: string
 ) {
   const hoje = new Date();
@@ -137,7 +137,7 @@ export function gerarContasReceberMultiplos(
     }
 
     if (pag.formaPagamento === "DUPLICATA") {
-      const numParcelas = venda.qtdParcelas || 1;
+      const numParcelas = pag.qtdParcelas || 1;
       const valorParcela = pag.valor.div(numParcelas).toDecimalPlaces(2);
       let somaParcelas = new Prisma.Decimal(0);
       for (let i = 1; i <= numParcelas; i++) {

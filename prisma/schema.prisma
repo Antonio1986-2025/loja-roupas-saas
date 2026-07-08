@@ -374,6 +374,7 @@ model VendaPagamento {
   vendaId        String
   formaPagamento FormaPagamento
   valor          Decimal       @db.Decimal(10, 2)
+  qtdParcelas    Int           @default(1)
 
   venda          Venda         @relation(fields: [vendaId], references: [id], onDelete: Cascade)
 

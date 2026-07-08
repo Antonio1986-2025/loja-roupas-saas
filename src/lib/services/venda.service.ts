@@ -84,8 +84,9 @@ export async function criarVenda(
       ? data.pagamentos.map((p) => ({
           formaPagamento: p.formaPagamento as FormaPagamento,
           valor: new Prisma.Decimal(p.valor),
+          qtdParcelas: p.qtdParcelas || 1,
         }))
-      : [{ formaPagamento: data.formaPagamento as FormaPagamento, valor: total }];
+      : [{ formaPagamento: data.formaPagamento as FormaPagamento, valor: total, qtdParcelas: data.qtdParcelas || 1 }];
 
     const venda = await tx.venda.create({
       data: {
