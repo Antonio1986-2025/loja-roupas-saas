@@ -176,6 +176,63 @@ export async function getProdutosMaisVendidos(tenantId: string, periodo: Periodo
     .slice(0, limite);
 }
 
+export async function getLucro(tenantId: string, periodo: Periodo) {
+  const { start, end } = getDateRange(periodo);
+
+  const [totalReceita, itens, despesasAgg] = await Promise.all([
+    prisma.venda.aggregate({
+      where: {
+        tenantId,
+        status: "CONCLUIDA",
+        createdAt: { gte: start, lte: end },
+      },
+      _sum: { total: true },
+    }),
+
+    prisma.vendaItem.findMany({
+      where: {
+        venda: {
+          tenantId,
+          status: "CONCLUIDA",
+          createdAt: { gte: start, lte: end },
+        },
+      },
+      select: {
+        quantidade: true,
+        variante: {
+          select: {
+            produto: {
+              select: { precoCusto: true },
+            },
+          },
+        },
+      },
+    }),
+
+    prisma.contaPagar.aggregate({
+      where: {
+        tenantId,
+        status: "PAGO",
+        dataPagamento: { gte: start, lte: end },
+      },
+      _sum: { valor: true },
+    }),
+  ]);
+
+  const faturamento = Number(totalReceita._sum.total || 0);
+
+  const custoProdutos = itens.reduce((sum, item) => {
+    const custo = Number(item.variante.produto.precoCusto || 0);
+    return sum + custo * item.quantidade;
+  }, 0);
+
+  const despesas = Number(despesasAgg._sum.valor || 0);
+  const lucroBruto = faturamento - custoProdutos;
+  const lucroLiquido = lucroBruto - despesas;
+
+  return { faturamento, custoProdutos, despesas, lucroBruto, lucroLiquido };
+}
+
 export async function getCondicionaisResumo(tenantId: string) {
   const [ativas, vencidas, finalizadas, canceladas] = await Promise.all([
     prisma.vendaCondicional.count({

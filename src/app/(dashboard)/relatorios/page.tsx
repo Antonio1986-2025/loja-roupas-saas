@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, TrendingDown, PiggyBank, DollarSign, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 type Periodo = "hoje" | "7d" | "30d" | "90d" | "ano";
@@ -45,17 +45,19 @@ export default function RelatoriosPage() {
   const [vendasPorPagamento, setVendasPorPagamento] = useState<any[]>([]);
   const [produtosTop, setProdutosTop] = useState<any[]>([]);
   const [condicionais, setCondicionais] = useState<any>(null);
+  const [lucro, setLucro] = useState<any>(null);
 
   const fetchDados = useCallback(async () => {
     setCarregando(true);
 
     try {
-      const [res, vendasDia, vendasPag, prodTop, cond] = await Promise.all([
+      const [res, vendasDia, vendasPag, prodTop, cond, lucroData] = await Promise.all([
         fetch(`/api/relatorios?tipo=resumo&periodo=${periodo}`).then((r) => r.json()),
         fetch(`/api/relatorios?tipo=vendas-por-dia&periodo=${periodo}`).then((r) => r.json()),
         fetch(`/api/relatorios?tipo=vendas-por-pagamento&periodo=${periodo}`).then((r) => r.json()),
         fetch(`/api/relatorios?tipo=produtos-mais-vendidos&periodo=${periodo}`).then((r) => r.json()),
         fetch(`/api/relatorios?tipo=condicionais&periodo=${periodo}`).then((r) => r.json()),
+        fetch(`/api/relatorios?tipo=lucro&periodo=${periodo}`).then((r) => r.json()),
       ]);
 
       setResumo(res);
@@ -63,6 +65,7 @@ export default function RelatoriosPage() {
       setVendasPorPagamento(vendasPag);
       setProdutosTop(prodTop);
       setCondicionais(cond);
+      setLucro(lucroData);
     } catch {
       // silently fail
     } finally {
@@ -157,6 +160,64 @@ export default function RelatoriosPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">{resumo?.condicionaisAtivas ?? 0}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4" />
+                  Custo dos Produtos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(lucro?.custoProdutos ?? 0)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Despesas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(lucro?.despesas ?? 0)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <PiggyBank className="h-4 w-4" />
+                  Lucro Bruto
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className={`text-2xl font-bold ${(lucro?.lucroBruto ?? 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {formatCurrency(lucro?.lucroBruto ?? 0)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Lucro Líquido
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className={`text-2xl font-bold ${(lucro?.lucroLiquido ?? 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {formatCurrency(lucro?.lucroLiquido ?? 0)}
+                </p>
               </CardContent>
             </Card>
           </div>

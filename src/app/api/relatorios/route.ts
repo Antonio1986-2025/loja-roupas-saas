@@ -6,6 +6,7 @@ import {
   getVendasPorDia,
   getVendasPorPagamento,
   getProdutosMaisVendidos,
+  getLucro,
   getCondicionaisResumo,
   type Periodo,
 } from "@/lib/services/relatorio.service";
@@ -47,6 +48,11 @@ export async function GET(req: NextRequest) {
 
       case "produtos-mais-vendidos": {
         const dados = await getProdutosMaisVendidos(tenantId, periodo);
+        return NextResponse.json(dados);
+      }
+
+      case "lucro": {
+        const dados = await getLucro(tenantId, periodo);
         return NextResponse.json(dados);
       }
 
