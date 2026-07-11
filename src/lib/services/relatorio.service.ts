@@ -214,6 +214,7 @@ export async function getLucro(tenantId: string, periodo: Periodo) {
         tenantId,
         status: "PAGO",
         dataPagamento: { gte: start, lte: end },
+        NOT: { categoria: "FORNECEDOR" },
       },
       _sum: { valor: true },
     }),
