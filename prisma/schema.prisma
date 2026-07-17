@@ -202,6 +202,7 @@ enum TipoMovimentacao {
   SAIDA
   AJUSTE
   DEVOLUCAO
+  CANCELAMENTO_ENTRADA
 }
 
 // ============================================
@@ -588,6 +589,11 @@ model NotaFiscalItem {
   @@map("nota_fiscal_itens")
 }
 
+enum StatusEntrada {
+  ATIVA
+  CANCELADA
+}
+
 enum NFeTipo {
   NFE
   NFCE
@@ -747,6 +753,8 @@ model EntradaMercadoria {
   xmlOriginal       String?
   margemLucroPadrao Decimal? @db.Decimal(5, 2)
   gerarContasPagar  Boolean  @default(true)
+  motivoCancelamento String?
+  status            StatusEntrada @default(ATIVA)
   observacao        String?
   tenantId          String
   createdAt         DateTime @default(now())
