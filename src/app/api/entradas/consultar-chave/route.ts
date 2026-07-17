@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { consultarNfe, NfeError } from "@/lib/nfe-consulta";
+import { consultarNfe, NfeConsultaError } from "@/lib/nfe-consulta";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       xml: resultado.xml,
     });
   } catch (error) {
-    if (error instanceof NfeError) {
+    if (error instanceof NfeConsultaError) {
       return NextResponse.json(
         { error: error.code, message: error.message },
         { status: 400 }

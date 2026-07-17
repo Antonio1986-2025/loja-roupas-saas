@@ -12,7 +12,7 @@ async function main() {
     where: { tenantId: tenant.id },
     select: {
       id: true, numero: true, numeroNFe: true, chaveAcesso: true, createdAt: true,
-      fornecedor: { select: { nome: true } },
+      fornecedores: { select: { nome: true } },
       itens: { select: { id: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -21,7 +21,7 @@ async function main() {
 
   console.log(`\n📋 Últimas entradas (${entradas.length}):\n`);
   for (const e of entradas) {
-    console.log(`#${e.numero} NF ${e.numeroNFe ?? "—"} — ${e.fornecedor?.nome ?? "sem fornecedor"}`);
+    console.log(`#${e.numero} NF ${e.numeroNFe ?? "—"} — ${e.fornecedores?.nome ?? "sem fornecedor"}`);
     console.log(`  Itens: ${e.itens.length} | Criado: ${e.createdAt.toLocaleString("pt-BR")}`);
     if (e.chaveAcesso) console.log(`  Chave: ${e.chaveAcesso.slice(0, 20)}...`);
     console.log();
