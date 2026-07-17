@@ -346,7 +346,7 @@ export async function emitirNFe(
   }
 
   // 16. Salvar no banco
-  const nota = await prisma.notaFiscal.create({
+  const nota = await (prisma.notaFiscal as any).create({
     data: {
       tenantId,
       vendaId: venda.id,
@@ -411,7 +411,7 @@ export async function emitirNFe(
   for (const item of itens) {
     const realVarianteId = varianteMap.get(item.codigo);
     if (realVarianteId) {
-      await prisma.notaFiscalItem.updateMany({
+      await (prisma.notaFiscalItem as any).updateMany({
         where: { notaFiscalId: nota.id, varianteId: item.codigo },
         data: { varianteId: realVarianteId },
       });
