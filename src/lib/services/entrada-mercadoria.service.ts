@@ -57,14 +57,10 @@ function calcularRateio(data: CreateEntradaMercadoriaInput): ItemCalculado[] {
     const itemPis = item.valorPIS ? new Prisma.Decimal(item.valorPIS) : new Prisma.Decimal(0);
     const itemCofins = item.valorCOFINS ? new Prisma.Decimal(item.valorCOFINS) : new Prisma.Decimal(0);
 
-    // Simples Nacional: custo = precoFornecedor + frete + despesas + impostos (nada recupera)
+    // Simples Nacional: custo = precoFornecedor + (frete + despesas + impostos) / qtd
+    // precoUnit já é por unidade — somente frete/impostos são rateados por unidade
     const custoFinal = precoUnit
-      .add(custoFrete)
-      .add(custoDespesas)
-      .add(itemIcms)
-      .add(itemPis)
-      .add(itemCofins)
-      .div(qtd);
+      .add(custoFrete.add(custoDespesas).add(itemIcms).add(itemPis).add(itemCofins).div(qtd));
 
     const margem = item.margemLucro
       ? new Prisma.Decimal(item.margemLucro)
