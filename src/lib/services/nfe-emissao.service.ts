@@ -164,7 +164,7 @@ function parseAutorizacaoResponse(responseXml: string): SefazRetorno {
   // Extrai o XML da NFe autorizada (com protocolo)
   const protNFe = body; // o body já contém o XML com protocolo
 
-  return { cStat, xMotivo, nProt, recibo, xmlAssinado: protNFe };
+  return { cStat: cStat || "", xMotivo: xMotivo || "", nProt, recibo, xmlAssinado: protNFe };
 }
 
 // ============================================
