@@ -152,11 +152,9 @@ export function signXml(
 ): string {
   const { SignedXml } = require("xml-crypto");
 
-  const sig = new SignedXml({
-    privateKey: keyPem,
-    canonicalizationAlgorithm: "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
-  });
+  const sig = new SignedXml();
   sig.signatureAlgorithm = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+  sig.canonicalizationAlgorithm = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315";
   sig.addReference({
     xpath: referenceXPath,
     transforms: [
@@ -166,6 +164,7 @@ export function signXml(
     digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
     uri: referenceUri || undefined,
   });
+  sig.signingKey = keyPem;
   sig.keyInfoProvider = {
     getKeyInfo: () =>
       `<X509Data><X509Certificate>${certToBase64(certPem)}</X509Certificate></X509Data>`,
