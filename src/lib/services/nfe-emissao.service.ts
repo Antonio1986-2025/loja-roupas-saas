@@ -146,11 +146,22 @@ interface SefazRetorno {
 }
 
 function parseAutorizacaoResponse(responseXml: string): SefazRetorno {
-  const { body } = parseSoapResponse(responseXml);
-  const cStat = extractTag(body, "cStat");
-  const xMotivo = extractTag(body, "xMotivo");
+  // Tenta extrair o body do SOAP
+  let body = responseXml;
+  const soapBody = responseXml.match(/<soap:Body>([\s\S]*?)<\/soap:Body>/);
+  if (soapBody) body = soapBody[1];
 
-  if (!cStat) throw new NfeEmissaoError("SEFAZ_SEM_RESPOSTA", "SEFAZ não retornou status");
+  // Verifica se é SOAP fault
+  const fault = body.match(/<soap:Fault>([\s\S]*?)<\/soap:Fault>/);
+  if (fault) {
+    throw new NfeEmissaoError("SEFAZ_FAULT", "SOAP Fault: " + fault[1].substring(0, 500));
+  }
+
+  // Tenta extrair com e sem namespace
+  let cStat = extractTag(body, "cStat") || extractTag(body, "ns2:cStat") || extractTag(body, "ns3:cStat");
+  let xMotivo = extractTag(body, "xMotivo") || extractTag(body, "ns2:xMotivo") || extractTag(body, "ns3:xMotivo");
+
+  if (!cStat) throw new NfeEmissaoError("SEFAZ_SEM_RESPOSTA", "SEFAZ não retornou status. Resposta: " + responseXml.substring(0, 500));
 
   // 100 = Autorizada (assíncrono, veio recibo)
   // 104 = Lote processado (síncrono)
@@ -326,6 +337,7 @@ export async function emitirNFe(
   }
 
   // 14. Parse da resposta
+  console.log("[NF-e] SEFAZ response (first 1000 chars):", responseXml.substring(0, 1000));
   const retorno = parseAutorizacaoResponse(responseXml);
 
   // 15. Determinar status

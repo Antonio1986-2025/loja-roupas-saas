@@ -55,9 +55,9 @@ const SERVICOS_MS: Record<string, ServicoEndpoints> = {
 // Ações SOAP por serviço
 const SOAP_ACTIONS: Record<string, string> = {
   NfeConsultaProtocolo: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4/consultar",
-  NfeAutorizacao: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4/autorizar",
-  NfeRetAutorizacao: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRetAutorizacao4/retorno",
-  NfeCancelamento: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeCancelamento4/cancelar",
+  NfeAutorizacao: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4/nfeAutorizacaoLote",
+  NfeRetAutorizacao: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRetAutorizacao4/nfeRetAutorizacaoLote",
+  NfeCancelamento: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeCancelamento4/nfeCancelamentoNF",
   NfeInutilizacao: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeInutilizacao4/inutilizar",
   NfeStatusServico: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4/status",
 };
