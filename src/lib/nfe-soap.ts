@@ -253,14 +253,13 @@ export function buildSoapEnvelope(
 export async function sendSoapRequest(
   endpoint: string,
   soapXml: string,
-  pfxBase64: string,
-  senha: string,
+  certPem: string,
+  keyPem: string,
   soapAction: string
 ): Promise<string> {
-  const pfxBuffer = Buffer.from(pfxBase64, "base64");
   const secureContext = tls.createSecureContext({
-    pfx: pfxBuffer,
-    passphrase: senha,
+    cert: certPem,
+    key: keyPem,
   });
 
   const agent = new https.Agent({

@@ -313,8 +313,8 @@ export async function emitirNFe(
     responseXml = await sendSoapRequest(
       endpoint,
       soapXml,
-      sefazConfig.pfxBase64,
-      sefazConfig.senhaCertificado,
+      certPem,
+      keyPem,
       soapAction
     );
   } catch (err: any) {
@@ -507,8 +507,8 @@ export async function cancelarNFe(
   const responseXml = await sendSoapRequest(
     endpoint,
     soapXml,
-    sefazConfig.pfxBase64,
-    sefazConfig.senhaCertificado,
+    certPem,
+    keyPem,
     soapAction
   );
 

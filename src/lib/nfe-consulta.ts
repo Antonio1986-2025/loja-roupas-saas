@@ -107,8 +107,8 @@ export async function consultarNfe(chave: string, tenantId: string): Promise<Nfe
   const responseXml = await sendSoapRequest(
     endpoint,
     soapXml,
-    sefazConfig.pfxBase64,
-    sefazConfig.senhaCertificado,
+    certPem,
+    keyPem,
     soapAction
   );
 
