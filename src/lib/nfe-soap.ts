@@ -28,27 +28,27 @@ interface ServicoEndpoints {
 const SERVICOS_MS: Record<string, ServicoEndpoints> = {
   NfeConsultaProtocolo: {
     producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeConsultaProtocolo4",
-    homologacao: "https://homnfe.sefaz.ms.gov.br/nfe-ws/NfeConsultaProtocolo4",
+    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeConsultaProtocolo4",
   },
   NfeAutorizacao: {
     producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeAutorizacao4",
-    homologacao: "https://homnfe.sefaz.ms.gov.br/nfe-ws/NfeAutorizacao4",
+    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeAutorizacao4",
   },
   NfeRetAutorizacao: {
     producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeRetAutorizacao4",
-    homologacao: "https://homnfe.sefaz.ms.gov.br/nfe-ws/NfeRetAutorizacao4",
+    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeRetAutorizacao4",
   },
   NfeCancelamento: {
     producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeCancelamento4",
-    homologacao: "https://homnfe.sefaz.ms.gov.br/nfe-ws/NfeCancelamento4",
+    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeCancelamento4",
   },
   NfeInutilizacao: {
     producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeInutilizacao4",
-    homologacao: "https://homnfe.sefaz.ms.gov.br/nfe-ws/NfeInutilizacao4",
+    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeInutilizacao4",
   },
   NfeStatusServico: {
     producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeStatusServico4",
-    homologacao: "https://homnfe.sefaz.ms.gov.br/nfe-ws/NfeStatusServico4",
+    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeStatusServico4",
   },
 };
 
