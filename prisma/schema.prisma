@@ -7,102 +7,57 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// MULTI-TENANT & AUTH
-// ============================================
+model CaixaMovimento {
+  id             String             @id @default(cuid())
+  caixaId        String
+  tipo           CaixaMovimentoTipo
+  valor          Decimal            @db.Decimal(10, 2)
+  formaPagamento FormaPagamento?
+  descricao      String?
+  vendaId        String?
+  usuarioId      String?
+  createdAt      DateTime           @default(now())
+  caixas         Caixa             @relation(fields: [caixaId], references: [id], onDelete: Cascade)
+  users          User?             @relation(fields: [usuarioId], references: [id])
+  vendas         Venda?            @relation(fields: [vendaId], references: [id])
 
-model Tenant {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique @db.VarChar(100)
-  logo      String?
-  plan      Plan     @default(FREE)
-  status    TenantStatus @default(ACTIVE)
-  trialEndsAt    DateTime?
-  assinaturaAte  DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users              User[]
-  produtos           Produto[]
-  categorias         Categoria[]
-  clientes           Cliente[]
-  fornecedores       Fornecedor[]
-  vendas             Venda[]
-  vendasCondicionais VendaCondicional[]
-  funcionarios       Funcionario[]
-  configuracoes      Configuracao?
-  notasFiscais       NotaFiscal[]
-  contasPagar        ContaPagar[]
-  contasReceber      ContaReceber[]
-  movimentacoesCaixa MovimentacaoCaixa[]
-  entradasMercadoria EntradaMercadoria[]
-  caixas             Caixa[]
-  orcamentos         Orcamento[]
-
-  @@index([slug])
-  @@map("tenants")
+  @@index([caixaId])
+  @@index([createdAt])
+  @@index([tipo])
+  @@map("caixa_movimentos")
 }
 
-enum Plan {
-  FREE
-  BASIC
-  PRO
-  ENTERPRISE
+model Caixa {
+  id               String             @id
+  tenantId         String
+  usuarioId        String
+  dataAbertura     DateTime           @default(now())
+  dataFechamento   DateTime?
+  saldoInicial     Decimal            @default(0) @db.Decimal(10, 2)
+  saldoFinal       Decimal?           @db.Decimal(10, 2)
+  saldoReal        Decimal?           @db.Decimal(10, 2)
+  diferenca        Decimal?           @db.Decimal(10, 2)
+  status           CaixaStatus        @default(ABERTO)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  caixa_movimentos CaixaMovimento[]
+  tenants          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users            User              @relation(fields: [usuarioId], references: [id])
+  vendas           Venda[]
+
+  @@index([dataAbertura])
+  @@index([tenantId, status])
+  @@map("caixas")
 }
-
-enum TenantStatus {
-  ACTIVE
-  SUSPENDED
-  CANCELLED
-}
-
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique @db.VarChar(200)
-  password      String
-  name          String
-  role          UserRole  @default(USER)
-  avatar        String?
-  tenantId      String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  vendas        Venda[]
-  caixas              Caixa[]
-  movimentosCaixa     CaixaMovimento[]
-  orcamentos          Orcamento[]
-  funcionario         Funcionario?
-
-  @@index([tenantId])
-  @@index([email])
-  @@map("users")
-}
-
-enum UserRole {
-  ADMIN
-  MANAGER
-  USER
-  VENDEDOR
-  CAIXA
-  ESTOQUISTA
-  FINANCEIRO
-}
-
-// ============================================
-// PRODUTOS & ESTOQUE
-// ============================================
 
 model Categoria {
-  id        String   @id @default(cuid())
+  id        String     @id
   nome      String
   slug      String
   tenantId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime
+  tenants   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   produtos  Produto[]
 
   @@unique([tenantId, slug])
@@ -110,239 +65,650 @@ model Categoria {
   @@map("categorias")
 }
 
-model Produto {
-  id                String   @id @default(cuid())
-  nome              String
-  descricao         String?
-  codigoInterno     String?   @db.VarChar(100)
-  codigoFornecedor  String?   @db.VarChar(100)
-  marca             String?
-  genero            Genero?
-  precoVenda        Decimal   @db.Decimal(10, 2)
-  precoCusto        Decimal?  @db.Decimal(10, 2)
-  fotoUrl           String?
-  ativo             Boolean   @default(true)
-  categoriaId       String?
-  fornecedorId      String?
-  tenantId          String
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  categoria         Categoria?          @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
-  fornecedor        Fornecedor?         @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
-  variantes         ProdutoVariante[]
-  
-  @@index([tenantId])
-  @@index([categoriaId])
-  @@index([fornecedorId])
-  @@index([codigoInterno])
-  @@index([codigoFornecedor])
-  @@map("produtos")
-}
-
-enum Genero {
-  MASCULINO
-  FEMININO
-  UNISSEX
-  INFANTIL
-}
-
-model ProdutoVariante {
-  id                String   @id @default(cuid())
-  produtoId         String
-  cor               String?
-  tamanho           String?
-  codigoBarras      String   @unique @db.VarChar(100)
-  codigoInterno     String?  @db.VarChar(100)
-  codigoFornecedor  String?  @db.VarChar(100)
-  precoVenda        Decimal? @db.Decimal(10, 2)
-  qtdEstoque        Int      @default(0)
-  qtdDisponivel     Int      @default(0)
-  qtdCondicional    Int      @default(0)
-  estoqueMinimo     Int      @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  produto               Produto                @relation(fields: [produtoId], references: [id], onDelete: Cascade)
-  vendaItens            VendaItem[]
-  condicionalItens      VendaCondicionalItem[]
-  movimentacoes         MovimentacaoEstoque[]
-  entradasMercadoria    EntradaMercadoriaItem[]
-  orcamentoItens        OrcamentoItem[]
-
-  @@index([produtoId])
-  @@index([codigoBarras])
-  @@map("produto_variantes")
-}
-
-model MovimentacaoEstoque {
-  id          String   @id @default(cuid())
-  varianteId  String
-  tipo        TipoMovimentacao
-  quantidade  Int
-  observacao  String?
-  createdAt   DateTime @default(now())
-
-  variante    ProdutoVariante @relation(fields: [varianteId], references: [id], onDelete: Cascade)
-
-  @@index([varianteId])
-  @@index([createdAt])
-  @@map("movimentacoes_estoque")
-}
-
-enum TipoMovimentacao {
-  ENTRADA
-  SAIDA
-  AJUSTE
-  DEVOLUCAO
-}
-
-// ============================================
-// CLIENTES & FORNECEDORES
-// ============================================
-
 model Cliente {
-  id              String    @id @default(cuid())
-  nome            String
-  cpf             String?   @db.VarChar(14)
-  telefone        String?
-  email           String?
-  dataNascimento  DateTime?
-  endereco        String?
-  cidade          String?
-  estado          String?
-  cep             String?
-  creditoAtual    Decimal   @default(0) @db.Decimal(10, 2)
-  observacoes     String?
-  tenantId        String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                  String                @id
+  nome                String
+  cpf                 String?               @db.VarChar(14)
+  telefone            String?
+  email               String?
+  dataNascimento      DateTime?
+  endereco            String?
+  numero              String?
+  bairro              String?
+  cidade              String?
+  estado              String?
+  cep                 String?
+  inscricaoEstadual   String?               @db.VarChar(20)
+  indIEDest           Int?
+  creditoAtual        Decimal               @default(0) @db.Decimal(10, 2)
+  observacoes         String?
+  tenantId            String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  tenants             Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contas_receber      ContaReceber[]
+  orcamentos          Orcamento[]
+  vendas              Venda[]
+  vendas_condicionais VendaCondicional[]
 
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  vendas          Venda[]
-  vendasCondicionais VendaCondicional[]
-  contasReceber   ContaReceber[]
-  orcamentos      Orcamento[]
-
-  @@index([tenantId])
   @@unique([tenantId, cpf])
   @@index([cpf])
   @@index([telefone])
+  @@index([tenantId])
   @@map("clientes")
 }
 
-model Fornecedor {
-  id          String   @id @default(cuid())
-  nome        String
-  cnpj        String?   @db.VarChar(18)
-  telefone    String?
-  email       String?
-  endereco    String?
-  cidade      String?
-  estado      String?
-  cep         String?
-  observacoes String?
-  tenantId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Configuracao {
+  id                  String   @id
+  tenantId            String   @unique
+  nomeEmpresa         String
+  cnpj                String?
+  telefone            String?
+  email               String?
+  endereco            String?
+  numero              String?
+  bairro              String?
+  cidade              String?
+  estado              String?
+  cep                 String?
+  logoUrl             String?
+  corPrimaria         String   @default("#3b82f6")
+  corSecundaria       String   @default("#8b5cf6")
+  emailNotificacoes   Boolean  @default(true)
+  alertaEstoqueBaixo  Boolean  @default(true)
+  certificadoA1       String?
+  senhaCertificado    String?
+  regimeTributario    String?
+  inscricaoEstadual   String?   @db.VarChar(20)
+  inscricaoMunicipal  String?   @db.VarChar(20)
+  cfopPadrao          String?   @db.VarChar(5)
+  csc                 String?
+  cscId               String?
+  nfeSerie            Int       @default(1)
+  nfeNumero           Int       @default(1)
+  nfceSerie           Int       @default(1)
+  nfceNumero          Int       @default(1)
+  ambienteNFe         String    @default("2")
+  ibgeCodigoCidade    String?   @db.VarChar(7)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+  tenants             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@map("configuracoes")
+}
 
-  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  produtos           Produto[]
-  contasPagar        ContaPagar[]
-  entradasMercadoria EntradaMercadoria[]
+model ContaPagar {
+  id                  String               @id
+  descricao           String
+  valor               Decimal              @db.Decimal(10, 2)
+  valorPago           Decimal?             @db.Decimal(10, 2)
+  juros               Decimal?             @db.Decimal(10, 2)
+  multa               Decimal?             @db.Decimal(10, 2)
+  desconto            Decimal?             @db.Decimal(10, 2)
+  dataVencimento      DateTime
+  dataPagamento       DateTime?
+  formaPagamento      FormaPagamento?
+  numeroDocumento     String?              @db.VarChar(100)
+  status              StatusConta          @default(PENDENTE)
+  categoria           CategoriaContaPagar  @default(OUTRO)
+  fornecedorId        String?
+  entradaId           String?
+  observacoes         String?
+  tenantId            String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime
+  entradas_mercadoria EntradaMercadoria? @relation(fields: [entradaId], references: [id])
+  fornecedores        Fornecedor?        @relation(fields: [fornecedorId], references: [id])
+  tenants             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@index([dataVencimento])
+  @@index([status])
   @@index([tenantId])
+  @@map("contas_pagar")
+}
+
+model ContaReceber {
+  id              String                @id
+  descricao       String
+  valor           Decimal               @db.Decimal(10, 2)
+  valorRecebido   Decimal?              @db.Decimal(10, 2)
+  juros           Decimal?              @db.Decimal(10, 2)
+  multa           Decimal?              @db.Decimal(10, 2)
+  desconto        Decimal?              @db.Decimal(10, 2)
+  dataVencimento  DateTime
+  dataRecebimento DateTime?
+  status          StatusConta           @default(PENDENTE)
+  categoria       CategoriaContaReceber @default(CLIENTE)
+  formaPagamento  FormaPagamento?
+  numeroDocumento String?               @db.VarChar(100)
+  clienteId       String?
+  vendaId         String?
+  observacoes     String?
+  tenantId        String
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime
+  clientes        Cliente?             @relation(fields: [clienteId], references: [id])
+  tenants         Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vendas          Venda?               @relation(fields: [vendaId], references: [id])
+
+  @@index([dataVencimento])
+  @@index([status])
+  @@index([tenantId])
+  @@map("contas_receber")
+}
+
+model EntradaMercadoriaItem {
+  id                  String              @id
+  entradaId           String
+  varianteId          String
+  quantidade          Int
+  precoUnitario       Decimal             @db.Decimal(10, 2)
+  precoCusto          Decimal?            @db.Decimal(10, 2)
+  custoFrete          Decimal?            @db.Decimal(10, 2)
+  custoDespesas       Decimal?            @db.Decimal(10, 2)
+  custoFinal          Decimal?            @db.Decimal(10, 2)
+  margemLucro         Decimal?            @db.Decimal(5, 2)
+  precoVendaSugerido  Decimal?            @db.Decimal(10, 2)
+  valorICMS           Decimal?            @db.Decimal(10, 2)
+  valorPIS            Decimal?            @db.Decimal(10, 2)
+  valorCOFINS         Decimal?            @db.Decimal(10, 2)
+  createdAt           DateTime            @default(now())
+  entradas_mercadoria EntradaMercadoria @relation(fields: [entradaId], references: [id], onDelete: Cascade)
+  produto_variantes   ProdutoVariante   @relation(fields: [varianteId], references: [id])
+
+  @@index([entradaId])
+  @@index([varianteId])
+  @@map("entrada_mercadoria_itens")
+}
+
+model EntradaMercadoria {
+  id                       String                     @id
+  numero                   Int
+  fornecedorId             String?
+  chaveAcesso              String?                    @unique @db.VarChar(44)
+  numeroNFe                String?
+  serieNFe                 Int?
+  dataEmissao              DateTime?
+  cfop                     String?
+  naturezaOperacao         String?
+  dataEntrada              DateTime                   @default(now())
+  valorFrete               Decimal?                   @db.Decimal(10, 2)
+  valorSeguro              Decimal?                   @db.Decimal(10, 2)
+  valorDespesas            Decimal?                   @db.Decimal(10, 2)
+  valorDesconto            Decimal?                   @db.Decimal(10, 2)
+  valorICMS                Decimal?                   @db.Decimal(10, 2)
+  valorPIS                 Decimal?                   @db.Decimal(10, 2)
+  valorCOFINS              Decimal?                   @db.Decimal(10, 2)
+  valorIPI                 Decimal?                   @db.Decimal(10, 2)
+  xmlOriginal              String?
+  margemLucroPadrao        Decimal?                   @db.Decimal(5, 2)
+  gerarContasPagar         Boolean                    @default(true)
+  observacao               String?
+  tenantId                 String
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime
+  motivoCancelamento       String?
+  status                   StatusEntrada              @default(ATIVA)
+  contas_pagar             ContaPagar[]
+  entrada_mercadoria_itens EntradaMercadoriaItem[]
+  fornecedores             Fornecedor?              @relation(fields: [fornecedorId], references: [id])
+  tenants                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, numero])
+  @@index([chaveAcesso])
+  @@index([dataEntrada])
+  @@index([tenantId])
+  @@map("entradas_mercadoria")
+}
+
+model Fornecedor {
+  id                  String                @id
+  nome                String
+  cnpj                String?               @db.VarChar(18)
+  telefone            String?
+  email               String?
+  endereco            String?
+  cidade              String?
+  estado              String?
+  cep                 String?
+  observacoes         String?
+  tenantId            String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  contas_pagar        ContaPagar[]
+  entradas_mercadoria EntradaMercadoria[]
+  tenants             Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  produtos            Produto[]
+
   @@index([cnpj])
+  @@index([tenantId])
   @@map("fornecedores")
 }
 
 model Funcionario {
-  id          String   @id @default(cuid())
-  nome        String
-  cpf         String    @db.VarChar(14)
-  telefone    String?
-  email       String?
-  cargo       String?
-  salario     Decimal? @db.Decimal(10, 2)
+  id           String    @id
+  nome         String
+  cpf          String    @db.VarChar(14)
+  telefone     String?
+  email        String?
+  cargo        String?
+  salario      Decimal?  @db.Decimal(10, 2)
   dataAdmissao DateTime
   dataDemissao DateTime?
-  ativo       Boolean  @default(true)
-  tenantId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  ativo        Boolean   @default(true)
+  tenantId     String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  userId       String?   @unique
+  tenants      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users        User?    @relation(fields: [userId], references: [id])
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String?  @unique
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([tenantId])
   @@unique([tenantId, cpf])
   @@index([cpf])
+  @@index([tenantId])
   @@map("funcionarios")
 }
 
-// ============================================
-// VENDAS & PDV
-// ============================================
+model MovimentacaoCaixa {
+  id           String                @id
+  data         DateTime              @default(now())
+  tipo         TipoMovimentacaoCaixa
+  valor        Decimal               @db.Decimal(10, 2)
+  descricao    String
+  categoria    String
+  referenciaId String?
+  tenantId     String
+  createdAt    DateTime              @default(now())
+  tenants      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-model Venda {
-  id              String        @id @default(cuid())
+  @@index([data])
+  @@index([tenantId])
+  @@map("movimentacoes_caixa")
+}
+
+model MovimentacaoEstoque {
+  id                String            @id
+  varianteId        String
+  tipo              TipoMovimentacao
+  quantidade        Int
+  observacao        String?
+  createdAt         DateTime          @default(now())
+  produto_variantes ProdutoVariante @relation(fields: [varianteId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([varianteId])
+  @@map("movimentacoes_estoque")
+}
+
+model NotaFiscal {
+  id                 String       @id
+  tenantId           String
+  vendaId            String?
+  tipo               NFeTipo      @default(NFE)
+  modelo             String       @default("55")
+  serie              Int          @default(1)
+  numero             Int
+  chaveAcesso        String?      @unique @db.VarChar(44)
+  cNF                String?      @db.VarChar(8)
+  digVal             String?      @db.VarChar(64)
+  status             NFeStatus    @default(DIGITADA)
+  cStat              String?
+  xMotivo            String?
+  nProt              String?
+  dhRecbto           DateTime?
+  recibo             String?
+  naturezaOperacao   String?      @db.VarChar(200)
+  finalidade         Int          @default(1)
+  tpNF               Int          @default(1)
+  baseCalculoICMS    Decimal?     @db.Decimal(10, 2)
+  valorICMS          Decimal?     @db.Decimal(10, 2)
+  valorPIS           Decimal?     @db.Decimal(10, 2)
+  valorCOFINS        Decimal?     @db.Decimal(10, 2)
+  valorFrete         Decimal?     @db.Decimal(10, 2)
+  valorSeguro        Decimal?     @db.Decimal(10, 2)
+  valorDesconto      Decimal?     @db.Decimal(10, 2)
+  valorProdutos      Decimal?     @db.Decimal(10, 2)
+  valorTotal         Decimal      @db.Decimal(10, 2)
+  clienteNome        String?      @db.VarChar(200)
+  clienteCpfCnpj     String?      @db.VarChar(18)
+  clienteEndereco    String?
+  clienteNumero      String?
+  clienteBairro      String?
+  clienteCidade      String?
+  clienteEstado      String?
+  clienteCep         String?
+  clienteTelefone    String?
+  xmlEnvio           String?
+  xmlAssinado        String?
+  danfeUrl           String?
+  ambiente           Int          @default(2)
+  justificativaCancelamento String?
+  dataCancelamento   DateTime?
+  dataEmissao        DateTime     @default(now())
+  observacao         String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime
+
+  tenants            Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vendas             Venda?      @relation(fields: [vendaId], references: [id])
+  nota_fiscal_itens  NotaFiscalItem[]
+
+  @@unique([tenantId, modelo, serie, numero])
+  @@index([tenantId])
+  @@index([chaveAcesso])
+  @@index([vendaId])
+  @@index([status])
+  @@map("notas_fiscais")
+}
+
+model NotaFiscalItem {
+  id            String             @id
+  notaFiscalId  String
+  varianteId    String
+  quantidade    Int
+  precoUnitario Decimal            @db.Decimal(10, 2)
+  valorTotal    Decimal            @db.Decimal(10, 2)
+  ncm           String?            @db.VarChar(8)
+  cfop          String?            @db.VarChar(4)
+  csosn         String?            @db.VarChar(4)
+  origem        Int                @default(0)
+  aliquotaICMS  Decimal?           @db.Decimal(5, 2)
+
+  notas_fiscais     NotaFiscal     @relation(fields: [notaFiscalId], references: [id], onDelete: Cascade)
+  produto_variantes ProdutoVariante @relation(fields: [varianteId], references: [id])
+
+  @@index([notaFiscalId])
+  @@map("nota_fiscal_itens")
+}
+
+enum NFeTipo {
+  NFE
+  NFCE
+}
+
+enum NFeStatus {
+  DIGITADA
+  ASSINADA
+  ENVIADA
+  AUTORIZADA
+  DENEGADA
+  REJEITADA
+  CANCELADA
+  INUTILIZADA
+  ERRO
+}
+
+model OrcamentoItem {
+  id                String            @id
+  orcamentoId       String
+  varianteId        String
+  quantidade        Int
+  precoUnit         Decimal           @db.Decimal(10, 2)
+  desconto          Decimal           @default(0) @db.Decimal(10, 2)
+  subtotal          Decimal           @db.Decimal(10, 2)
+  orcamentos        Orcamento        @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
+  produto_variantes ProdutoVariante @relation(fields: [varianteId], references: [id])
+
+  @@index([orcamentoId])
+  @@index([varianteId])
+  @@map("orcamento_itens")
+}
+
+model Orcamento {
+  id              String            @id
   numero          Int
   clienteId       String?
   vendedorId      String
-  subtotal        Decimal       @db.Decimal(10, 2)
-  desconto        Decimal       @default(0) @db.Decimal(10, 2)
-  total           Decimal       @db.Decimal(10, 2)
-  formaPagamento  FormaPagamento
-  status          StatusVenda   @default(CONCLUIDA)
+  status          StatusOrcamento   @default(ABERTO)
+  validadeDias    Int               @default(7)
+  dataValidade    DateTime
+  subtotal        Decimal           @db.Decimal(10, 2)
+  desconto        Decimal           @default(0) @db.Decimal(10, 2)
+  total           Decimal           @db.Decimal(10, 2)
+  formaPagamento  FormaPagamento?
   observacoes     String?
-  qtdParcelas     Int       @default(1)
-  caixaId         String?
-  origemCondicionalId String? @unique
+  vendaId         String?           @unique
   tenantId        String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cliente         Cliente?    @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  vendedor        User        @relation(fields: [vendedorId], references: [id])
-  itens           VendaItem[]
-  pagamentos      VendaPagamento[]
-  contasReceber   ContaReceber[]
-  caixa           Caixa?      @relation(fields: [caixaId], references: [id], onDelete: SetNull)
-  movimentosCaixa CaixaMovimento[]
-  origemCondicional VendaCondicional? @relation("VendaDeCondicional", fields: [origemCondicionalId], references: [id])
-  origemOrcamento   Orcamento?        @relation("VendaDeOrcamento")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  orcamento_itens OrcamentoItem[]
+  clientes        Cliente?         @relation(fields: [clienteId], references: [id])
+  tenants         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vendas          Venda?           @relation(fields: [vendaId], references: [id])
+  users           User             @relation(fields: [vendedorId], references: [id])
 
   @@unique([tenantId, numero])
-  @@index([tenantId])
   @@index([clienteId])
-  @@index([vendedorId])
-  @@index([createdAt])
+  @@index([dataValidade])
+  @@index([status])
+  @@index([tenantId])
+  @@map("orcamentos")
+}
+
+model ProdutoVariante {
+  id                       String                     @id
+  produtoId                String
+  cor                      String?
+  tamanho                  String?
+  codigoBarras             String                     @unique @db.VarChar(100)
+  codigoInterno            String?                    @db.VarChar(100)
+  codigoFornecedor         String?                    @db.VarChar(100)
+  precoVenda               Decimal?                   @db.Decimal(10, 2)
+  qtdEstoque               Int                        @default(0)
+  qtdDisponivel            Int                        @default(0)
+  qtdCondicional           Int                        @default(0)
+  estoqueMinimo            Int                        @default(0)
+  csosn                    String?                    @db.VarChar(4)
+  cfop                     String?                    @db.VarChar(5)
+  origem                   Int                        @default(0)
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime
+  entrada_mercadoria_itens EntradaMercadoriaItem[]
+  movimentacoes_estoque    MovimentacaoEstoque[]
+  orcamento_itens          OrcamentoItem[]
+  nota_fiscal_itens        NotaFiscalItem[]
+  produtos                 Produto                   @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  venda_condicional_itens  VendaCondicionalItem[]
+  venda_itens              VendaItem[]
+
+  @@index([codigoBarras])
+  @@index([produtoId])
+  @@map("produto_variantes")
+}
+
+model Produto {
+  id                String              @id
+  nome              String
+  descricao         String?
+  codigoInterno     String?             @db.VarChar(100)
+  codigoFornecedor  String?             @db.VarChar(100)
+  marca             String?
+  genero            Genero?
+  ncm               String?             @db.VarChar(8)
+  cest              String?             @db.VarChar(7)
+  precoVenda        Decimal             @db.Decimal(10, 2)
+  precoCusto        Decimal?            @db.Decimal(10, 2)
+  fotoUrl           String?
+  ativo             Boolean             @default(true)
+  categoriaId       String?
+  fornecedorId      String?
+  tenantId          String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  produto_variantes ProdutoVariante[]
+  categorias        Categoria?         @relation(fields: [categoriaId], references: [id])
+  fornecedores      Fornecedor?       @relation(fields: [fornecedorId], references: [id])
+  tenants           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([categoriaId])
+  @@index([codigoFornecedor])
+  @@index([codigoInterno])
+  @@index([fornecedorId])
+  @@index([tenantId])
+  @@map("produtos")
+}
+
+model Tenant {
+  id                  String                @id
+  name                String
+  slug                String                @unique @db.VarChar(100)
+  logo                String?
+  plan                Plan                  @default(FREE)
+  status              TenantStatus          @default(ACTIVE)
+  trialEndsAt         DateTime?
+  assinaturaAte       DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  caixas              Caixa[]
+  categorias          Categoria[]
+  clientes            Cliente[]
+  configuracoes       Configuracao?
+  contas_pagar        ContaPagar[]
+  contas_receber      ContaReceber[]
+  entradas_mercadoria EntradaMercadoria[]
+  fornecedores        Fornecedor[]
+  funcionarios        Funcionario[]
+  movimentacoes_caixa MovimentacaoCaixa[]
+  notas_fiscais       NotaFiscal[]
+  orcamentos          Orcamento[]
+  produtos            Produto[]
+  users               User[]
+  vendas              Venda[]
+  vendas_condicionais VendaCondicional[]
+
+  @@index([slug])
+  @@map("tenants")
+}
+
+model User {
+  id               String             @id
+  email            String             @unique @db.VarChar(200)
+  password         String
+  name             String
+  role             UserRole           @default(USER)
+  avatar           String?
+  tenantId         String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  caixa_movimentos CaixaMovimento[]
+  caixas           Caixa[]
+  funcionarios     Funcionario?
+  orcamentos       Orcamento[]
+  tenants          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vendas           Venda[]
+
+  @@index([email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model VendaCondicionalItem {
+  id                  String                 @id
+  condicionalId       String
+  varianteId          String
+  quantidade          Int
+  precoUnit           Decimal                @db.Decimal(10, 2)
+  subtotal            Decimal                @db.Decimal(10, 2)
+  statusFinal         StatusItemCondicional?
+  vendas_condicionais VendaCondicional    @relation(fields: [condicionalId], references: [id], onDelete: Cascade)
+  produto_variantes   ProdutoVariante      @relation(fields: [varianteId], references: [id])
+
+  @@index([condicionalId])
+  @@index([varianteId])
+  @@map("venda_condicional_itens")
+}
+
+model VendaItem {
+  id                String            @id
+  vendaId           String
+  varianteId        String
+  quantidade        Int
+  qtdDevolvida      Int               @default(0)
+  precoUnit         Decimal           @db.Decimal(10, 2)
+  subtotal          Decimal           @db.Decimal(10, 2)
+  produto_variantes ProdutoVariante @relation(fields: [varianteId], references: [id])
+  vendas            Venda            @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+
+  @@index([varianteId])
+  @@index([vendaId])
+  @@map("venda_itens")
+}
+
+model VendaPagamento {
+  id             String         @id
+  vendaId        String
+  formaPagamento FormaPagamento
+  valor          Decimal        @db.Decimal(10, 2)
+  qtdParcelas    Int            @default(1)
+  vendas         Venda         @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+
+  @@index([vendaId])
+  @@map("venda_pagamentos")
+}
+
+model Venda {
+  id                  String               @id
+  numero              Int
+  clienteId           String?
+  vendedorId          String
+  subtotal            Decimal              @db.Decimal(10, 2)
+  desconto            Decimal              @default(0) @db.Decimal(10, 2)
+  total               Decimal              @db.Decimal(10, 2)
+  formaPagamento      FormaPagamento
+  status              StatusVenda          @default(CONCLUIDA)
+  observacoes         String?
+  caixaId             String?
+  origemCondicionalId String?              @unique
+  tenantId            String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime
+  qtdParcelas         Int                  @default(1)
+  caixa_movimentos    CaixaMovimento[]
+  contas_receber      ContaReceber[]
+  orcamentos          Orcamento?
+  venda_itens         VendaItem[]
+  venda_pagamentos    VendaPagamento[]
+  notas_fiscais       NotaFiscal[]
+  caixas              Caixa?              @relation(fields: [caixaId], references: [id])
+  clientes            Cliente?            @relation(fields: [clienteId], references: [id])
+  vendas_condicionais VendaCondicional? @relation(fields: [origemCondicionalId], references: [id])
+  tenants             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users               User                @relation(fields: [vendedorId], references: [id])
+
+  @@unique([tenantId, numero])
   @@index([caixaId])
+  @@index([clienteId])
+  @@index([createdAt])
+  @@index([tenantId])
+  @@index([vendedorId])
   @@map("vendas")
 }
 
-enum FormaPagamento {
-  DINHEIRO
-  DEBITO
-  CREDITO
-  PIX
-  BOLETO
-  CREDITO_LOJA
-  DUPLICATA
-}
+model VendaCondicional {
+  id                      String                    @id
+  numero                  Int
+  clienteId               String?
+  vendedorId              String?
+  dataSaida               DateTime                  @default(now())
+  dataVencimento          DateTime
+  dataFinalizacao         DateTime?
+  dataCancelamento        DateTime?
+  prazoDias               Int
+  status                  StatusVendaCondicional    @default(ATIVA)
+  observacoes             String?
+  tenantId                String
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  venda_condicional_itens VendaCondicionalItem[]
+  vendas                  Venda?
+  clientes                Cliente?                 @relation(fields: [clienteId], references: [id])
+  tenants                 Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-enum StatusVenda {
-  CONCLUIDA
-  CANCELADA
-  DEVOLVIDA
-}
-
-enum CaixaStatus {
-  ABERTO
-  FECHADO
+  @@unique([tenantId, numero])
+  @@index([clienteId])
+  @@index([dataVencimento])
+  @@index([status])
+  @@index([tenantId])
+  @@map("vendas_condicionais")
 }
 
 enum CaixaMovimentoTipo {
@@ -352,178 +718,9 @@ enum CaixaMovimentoTipo {
   SUPRIMENTO
 }
 
-model VendaItem {
-  id            String  @id @default(cuid())
-  vendaId       String
-  varianteId    String
-  quantidade    Int
-  qtdDevolvida  Int     @default(0)
-  precoUnit     Decimal @db.Decimal(10, 2)
-  subtotal      Decimal @db.Decimal(10, 2)
-
-  venda       Venda           @relation(fields: [vendaId], references: [id], onDelete: Cascade)
-  variante    ProdutoVariante @relation(fields: [varianteId], references: [id])
-
-  @@index([vendaId])
-  @@index([varianteId])
-  @@map("venda_itens")
-}
-
-model VendaPagamento {
-  id             String        @id @default(cuid())
-  vendaId        String
-  formaPagamento FormaPagamento
-  valor          Decimal       @db.Decimal(10, 2)
-  qtdParcelas    Int           @default(1)
-
-  venda          Venda         @relation(fields: [vendaId], references: [id], onDelete: Cascade)
-
-  @@index([vendaId])
-  @@map("venda_pagamentos")
-}
-
-// ============================================
-// CAIXA
-// ============================================
-
-model Caixa {
-  id             String        @id @default(cuid())
-  tenantId       String
-  usuarioId      String
-  dataAbertura   DateTime      @default(now())
-  dataFechamento DateTime?
-  saldoInicial   Decimal       @default(0) @db.Decimal(10, 2)
-  saldoFinal     Decimal?      @db.Decimal(10, 2)
-  saldoReal      Decimal?      @db.Decimal(10, 2)
-  diferenca      Decimal?      @db.Decimal(10, 2)
-  status         CaixaStatus   @default(ABERTO)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario   User      @relation(fields: [usuarioId], references: [id])
-  vendas    Venda[]
-  movimentos CaixaMovimento[]
-
-  @@index([tenantId, status])
-  @@index([dataAbertura])
-  @@map("caixas")
-}
-
-model CaixaMovimento {
-  id             String               @id @default(cuid())
-  caixaId        String
-  tipo           CaixaMovimentoTipo
-  valor          Decimal              @db.Decimal(10, 2)
-  formaPagamento FormaPagamento?
-  descricao      String?
-  vendaId        String?
-  usuarioId      String?
-  createdAt      DateTime             @default(now())
-
-  caixa   Caixa   @relation(fields: [caixaId], references: [id], onDelete: Cascade)
-  venda   Venda?  @relation(fields: [vendaId], references: [id], onDelete: SetNull)
-  usuario User?   @relation(fields: [usuarioId], references: [id])
-
-  @@index([caixaId])
-  @@index([tipo])
-  @@index([createdAt])
-  @@map("caixa_movimentos")
-}
-
-// ============================================
-// VENDA CONDICIONAL
-// ============================================
-
-model VendaCondicional {
-  id              String   @id @default(cuid())
-  numero          Int
-  clienteId       String?
-  vendedorId      String?
-  dataSaida       DateTime @default(now())
-  dataVencimento  DateTime
-  dataFinalizacao DateTime?
-  dataCancelamento DateTime?
-  prazoDias       Int
-  status          StatusVendaCondicional @default(ATIVA)
-  observacoes     String?
-  tenantId        String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cliente     Cliente?               @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  itens       VendaCondicionalItem[]
-  vendaGerada Venda?                 @relation("VendaDeCondicional")
-
-  @@unique([tenantId, numero])
-  @@index([tenantId])
-  @@index([clienteId])
-  @@index([status])
-  @@index([dataVencimento])
-  @@map("vendas_condicionais")
-}
-
-enum StatusVendaCondicional {
-  ATIVA
-  FINALIZADA
-  CANCELADA
-}
-
-model VendaCondicionalItem {
-  id            String  @id @default(cuid())
-  condicionalId String
-  varianteId    String
-  quantidade    Int
-  precoUnit     Decimal @db.Decimal(10, 2)
-  subtotal      Decimal @db.Decimal(10, 2)
-  statusFinal   StatusItemCondicional?
-
-  condicional   VendaCondicional @relation(fields: [condicionalId], references: [id], onDelete: Cascade)
-  variante      ProdutoVariante  @relation(fields: [varianteId], references: [id])
-
-  @@index([condicionalId])
-  @@index([varianteId])
-  @@map("venda_condicional_itens")
-}
-
-enum StatusItemCondicional {
-  COMPRADO
-  DEVOLVIDO
-}
-
-// ============================================
-// NOTA FISCAL
-// ============================================
-
-model NotaFiscal {
-  id          String   @id @default(cuid())
-  numero      String   @db.VarChar(50)
-  serie       String   @db.VarChar(20)
-  chaveAcesso String?  @db.VarChar(44)
-  valorTotal  Decimal  @db.Decimal(10, 2)
-  dataEmissao DateTime
-  xml         String?
-  pdf         String?
-  tenantId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, numero, serie])
-  @@index([tenantId])
-  @@map("notas_fiscais")
-}
-
-// ============================================
-// FINANCEIRO
-// ============================================
-
-enum StatusConta {
-  PENDENTE
-  PAGO
-  CANCELADO
+enum CaixaStatus {
+  ABERTO
+  FECHADO
 }
 
 enum CategoriaContaPagar {
@@ -547,223 +744,44 @@ enum CategoriaContaReceber {
   OUTRO
 }
 
-model ContaPagar {
-  id             String             @id @default(cuid())
-  descricao      String
-  valor          Decimal            @db.Decimal(10, 2)
-  valorPago      Decimal?           @db.Decimal(10, 2)
-  juros          Decimal?           @db.Decimal(10, 2)
-  multa          Decimal?           @db.Decimal(10, 2)
-  desconto       Decimal?           @db.Decimal(10, 2)
-  dataVencimento DateTime
-  dataPagamento  DateTime?
-  formaPagamento FormaPagamento?
-  numeroDocumento String?           @db.VarChar(100)
-  status         StatusConta        @default(PENDENTE)
-  categoria      CategoriaContaPagar @default(OUTRO)
-  fornecedorId   String?
-  entradaId      String?
-  observacoes    String?
-  tenantId       String
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-
-  tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fornecedor     Fornecedor?        @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
-  entrada        EntradaMercadoria? @relation(fields: [entradaId], references: [id], onDelete: SetNull)
-
-  @@index([tenantId])
-  @@index([status])
-  @@index([dataVencimento])
-  @@map("contas_pagar")
+enum FormaPagamento {
+  DINHEIRO
+  DEBITO
+  CREDITO
+  PIX
+  BOLETO
+  CREDITO_LOJA
+  DUPLICATA
 }
 
-model ContaReceber {
-  id               String                @id @default(cuid())
-  descricao        String
-  valor            Decimal               @db.Decimal(10, 2)
-  valorRecebido    Decimal?              @db.Decimal(10, 2)
-  juros            Decimal?              @db.Decimal(10, 2)
-  multa            Decimal?              @db.Decimal(10, 2)
-  desconto         Decimal?              @db.Decimal(10, 2)
-  dataVencimento   DateTime
-  dataRecebimento  DateTime?
-  status           StatusConta           @default(PENDENTE)
-  categoria        CategoriaContaReceber @default(CLIENTE)
-  formaPagamento   FormaPagamento?
-  numeroDocumento  String?               @db.VarChar(100)
-  clienteId        String?
-  vendaId          String?
-  observacoes      String?
-  tenantId         String
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-
-  tenant           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cliente          Cliente?              @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  venda            Venda?                @relation(fields: [vendaId], references: [id], onDelete: SetNull)
-
-  @@index([tenantId])
-  @@index([status])
-  @@index([dataVencimento])
-  @@map("contas_receber")
+enum Genero {
+  MASCULINO
+  FEMININO
+  UNISSEX
+  INFANTIL
 }
 
-model MovimentacaoCaixa {
-  id         String              @id @default(cuid())
-  data       DateTime            @default(now())
-  tipo       TipoMovimentacaoCaixa
-  valor      Decimal             @db.Decimal(10, 2)
-  descricao  String
-  categoria  String
-  referenciaId String?
-  tenantId   String
-  createdAt  DateTime            @default(now())
-
-  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([data])
-  @@map("movimentacoes_caixa")
+enum Plan {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
 }
 
-enum TipoMovimentacaoCaixa {
-  ENTRADA
-  SAIDA
+enum StatusConta {
+  PENDENTE
+  PAGO
+  CANCELADO
 }
 
-// ============================================
-// ENTRADA DE MERCADORIAS
-// ============================================
-
-model EntradaMercadoria {
-  id                String   @id @default(cuid())
-  numero            Int
-  fornecedorId      String?
-  chaveAcesso String?  @unique @db.VarChar(44)
-  numeroNFe         String?
-  serieNFe          Int?
-  dataEmissao       DateTime?
-  cfop              String?
-  naturezaOperacao  String?
-  dataEntrada       DateTime @default(now())
-  valorFrete        Decimal? @db.Decimal(10, 2)
-  valorSeguro       Decimal? @db.Decimal(10, 2)
-  valorDespesas     Decimal? @db.Decimal(10, 2)
-  valorDesconto     Decimal? @db.Decimal(10, 2)
-  valorICMS         Decimal? @db.Decimal(10, 2)
-  valorPIS          Decimal? @db.Decimal(10, 2)
-  valorCOFINS       Decimal? @db.Decimal(10, 2)
-  valorIPI          Decimal? @db.Decimal(10, 2)
-  xmlOriginal       String?
-  margemLucroPadrao Decimal? @db.Decimal(5, 2)
-  gerarContasPagar  Boolean  @default(true)
-  observacao        String?
-  tenantId          String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  tenant            Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fornecedor        Fornecedor?           @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
-  itens             EntradaMercadoriaItem[]
-  contasPagar       ContaPagar[]
-
-  @@unique([tenantId, numero])
-  @@index([tenantId])
-  @@index([chaveAcesso])
-  @@index([dataEntrada])
-  @@map("entradas_mercadoria")
+enum StatusEntrada {
+  ATIVA
+  CANCELADA
 }
 
-model EntradaMercadoriaItem {
-  id                String   @id @default(cuid())
-  entradaId         String
-  varianteId        String
-  quantidade        Int
-  precoUnitario     Decimal  @db.Decimal(10, 2)
-  precoCusto        Decimal? @db.Decimal(10, 2)
-  custoFrete        Decimal? @db.Decimal(10, 2)
-  custoDespesas     Decimal? @db.Decimal(10, 2)
-  custoFinal        Decimal? @db.Decimal(10, 2)
-  margemLucro       Decimal? @db.Decimal(5, 2)
-  precoVendaSugerido Decimal? @db.Decimal(10, 2)
-  valorICMS         Decimal? @db.Decimal(10, 2)
-  valorPIS          Decimal? @db.Decimal(10, 2)
-  valorCOFINS       Decimal? @db.Decimal(10, 2)
-  createdAt         DateTime @default(now())
-
-  entrada           EntradaMercadoria @relation(fields: [entradaId], references: [id], onDelete: Cascade)
-  variante          ProdutoVariante   @relation(fields: [varianteId], references: [id])
-
-  @@index([entradaId])
-  @@index([varianteId])
-  @@map("entrada_mercadoria_itens")
-}
-
-// ============================================
-// CONFIGURAÇÕES
-// ============================================
-
-model Configuracao {
-  id                  String   @id @default(cuid())
-  tenantId            String   @unique
-  nomeEmpresa         String
-  cnpj                String?
-  telefone            String?
-  email               String?
-  endereco            String?
-  cidade              String?
-  estado              String?
-  cep                 String?
-  logoUrl             String?
-  corPrimaria         String   @default("#3b82f6")
-  corSecundaria       String   @default("#8b5cf6")
-  emailNotificacoes   Boolean  @default(true)
-  alertaEstoqueBaixo  Boolean  @default(true)
-  certificadoA1       String?
-  senhaCertificado    String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@map("configuracoes")
-}
-
-// ============================================
-// ORÇAMENTO / PRÉ-VENDA
-// ============================================
-
-model Orcamento {
-  id            String          @id @default(cuid())
-  numero        Int
-  clienteId     String?
-  vendedorId    String
-  status        StatusOrcamento @default(ABERTO)
-  validadeDias  Int             @default(7)
-  dataValidade  DateTime
-  subtotal      Decimal         @db.Decimal(10, 2)
-  desconto      Decimal         @default(0) @db.Decimal(10, 2)
-  total         Decimal         @db.Decimal(10, 2)
-  formaPagamento FormaPagamento?
-  observacoes   String?
-  vendaId       String?         @unique
-  tenantId      String
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cliente       Cliente?        @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  vendedor      User            @relation(fields: [vendedorId], references: [id])
-  itens         OrcamentoItem[]
-  vendaGerada   Venda?          @relation("VendaDeOrcamento", fields: [vendaId], references: [id])
-
-  @@unique([tenantId, numero])
-  @@index([tenantId])
-  @@index([clienteId])
-  @@index([status])
-  @@index([dataValidade])
-  @@map("orcamentos")
+enum StatusItemCondicional {
+  COMPRADO
+  DEVOLVIDO
 }
 
 enum StatusOrcamento {
@@ -773,19 +791,43 @@ enum StatusOrcamento {
   EXPIRADO
 }
 
-model OrcamentoItem {
-  id          String   @id @default(cuid())
-  orcamentoId String
-  varianteId  String
-  quantidade  Int
-  precoUnit   Decimal  @db.Decimal(10, 2)
-  desconto    Decimal  @default(0) @db.Decimal(10, 2)
-  subtotal    Decimal  @db.Decimal(10, 2)
+enum StatusVenda {
+  CONCLUIDA
+  CANCELADA
+  DEVOLVIDA
+}
 
-  orcamento   Orcamento       @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
-  variante    ProdutoVariante @relation(fields: [varianteId], references: [id])
+enum StatusVendaCondicional {
+  ATIVA
+  FINALIZADA
+  CANCELADA
+}
 
-  @@index([orcamentoId])
-  @@index([varianteId])
-  @@map("orcamento_itens")
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum TipoMovimentacao {
+  ENTRADA
+  SAIDA
+  AJUSTE
+  DEVOLUCAO
+  CANCELAMENTO_ENTRADA
+}
+
+enum TipoMovimentacaoCaixa {
+  ENTRADA
+  SAIDA
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+  VENDEDOR
+  CAIXA
+  ESTOQUISTA
+  FINANCEIRO
 }

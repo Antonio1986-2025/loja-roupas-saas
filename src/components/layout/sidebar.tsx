@@ -24,6 +24,7 @@ import {
   Truck,
   ShieldCheck,
   X,
+  Receipt,
 } from "lucide-react";
 
 const menuItems = [
@@ -71,6 +72,11 @@ const menuItems = [
     title: "Vendas",
     href: "/vendas",
     icon: TrendingUp,
+  },
+  {
+    title: "Notas Fiscais",
+    href: "/notas-fiscais",
+    icon: Receipt,
   },
   {
     title: "Orçamentos",

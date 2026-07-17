@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { ArrowLeft, Loader2, RotateCcw, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Loader2, RotateCcw, CheckCircle2, FileText } from "lucide-react";
 import Link from "next/link";
 import ModalDevolucao from "@/components/modal-devolucao";
+import ModalEmitirNFe from "@/components/modal-emitir-nfe";
 
 const formaPagamentoLabels: Record<string, string> = {
   DINHEIRO: "Dinheiro", DEBITO: "Débito", CREDITO: "Crédito", PIX: "PIX", BOLETO: "Boleto", DUPLICATA: "Duplicata", CREDITO_LOJA: "Crédito Loja",
@@ -44,6 +45,14 @@ export default function DetalheVendaPage() {
   useEffect(() => {
     carregarVenda();
   }, [params.id, router]);
+
+  // NF-e
+  const [showEmitirNFe, setShowEmitirNFe] = useState(false);
+
+  const handleNFeEmitida = (dados: any) => {
+    // atualiza a venda após emissão
+    carregarVenda();
+  };
 
   const handleDevolver = async (data: {
     itens: { vendaItemId: string; quantidade: number }[];
@@ -102,7 +111,7 @@ export default function DetalheVendaPage() {
           {statusLabels[venda.status] || venda.status}
         </Badge>
         {(venda.status === "CONCLUIDA" || venda.status === "DEVOLVIDA_PARCIAL") && (
-          <Button
+          <><Button
             onClick={() => {
               setErroDevolucao("");
               setShowDevolucao(true);
@@ -113,6 +122,14 @@ export default function DetalheVendaPage() {
             <RotateCcw className="mr-2 h-4 w-4" />
             Devolver
           </Button>
+          <Button
+            onClick={() => setShowEmitirNFe(true)}
+            variant="outline"
+            className="border-blue-500 text-blue-600 hover:bg-blue-50"
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Emitir NF-e
+          </Button></>
         )}
       </div>
 
@@ -334,6 +351,18 @@ export default function DetalheVendaPage() {
           onCancel={() => setShowDevolucao(false)}
           carregando={devolvendo}
           erro={erroDevolucao}
+        />
+      )}
+
+      {showEmitirNFe && (
+        <ModalEmitirNFe
+          vendaId={venda.id}
+          vendaNumero={venda.numero}
+          vendaTotal={Number(venda.total)}
+          clienteNome={venda.cliente?.nome}
+          clienteCpf={venda.cliente?.cpf}
+          onClose={() => setShowEmitirNFe(false)}
+          onSuccess={handleNFeEmitida}
         />
       )}
     </div>
