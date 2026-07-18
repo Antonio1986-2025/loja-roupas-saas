@@ -272,6 +272,7 @@ export async function sendSoapRequest(
 
   const agent = new https.Agent({
     secureContext,
+    rejectUnauthorized: false, // Homologação SEFAZ usa certificado autoassinado
     minVersion: "TLSv1.2",
     maxVersion: "TLSv1.2",
   });
