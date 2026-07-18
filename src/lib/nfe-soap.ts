@@ -274,7 +274,7 @@ export function buildSoapEnvelope(
     </${tags.cabec}>
   </soap:Header>
   <soap:Body>
-    <${tags.corpo} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${wsdlNome}>${cleanXml}</${tags.corpo}>
+    <${tags.corpo} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${wsdlNome}">${cleanXml}</${tags.corpo}>
   </soap:Body>
 </soap:Envelope>`;
 }
