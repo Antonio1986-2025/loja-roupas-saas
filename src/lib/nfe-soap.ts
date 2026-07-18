@@ -25,30 +25,46 @@ interface ServicoEndpoints {
   homologacao: string;
 }
 
+// SVRS - Serviço Virtual RS (usado por MS e outros estados)
+const SVRS_PRODUCAO = "https://nfe.svrs.rs.gov.br/ws";
+const SVRS_HOMOLOGACAO = "https://nfe-homologacao.svrs.rs.gov.br/ws";
+
+function svcUrl(base: string, svc: string): string {
+  const svcPath: Record<string, string> = {
+    NfeConsultaProtocolo: "NfeConsultaProtocolo/NfeConsultaProtocolo4.asmx",
+    NfeAutorizacao: "NfeAutorizacao/NFeAutorizacao4.asmx",
+    NfeRetAutorizacao: "NfeRetAutorizacao/NFeRetAutorizacao4.asmx",
+    NfeCancelamento: "NfeCancelamento/NFeCancelamento4.asmx",
+    NfeInutilizacao: "NfeInutilizacao/NFeInutilizacao4.asmx",
+    NfeStatusServico: "NfeStatusServico/NFeStatusServico4.asmx",
+  };
+  return `${base}/${svcPath[svc] || svc}`;
+}
+
 const SERVICOS_MS: Record<string, ServicoEndpoints> = {
   NfeConsultaProtocolo: {
-    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeConsultaProtocolo4",
-    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeConsultaProtocolo4",
+    producao: svcUrl(SVRS_PRODUCAO, "NfeConsultaProtocolo"),
+    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeConsultaProtocolo"),
   },
   NfeAutorizacao: {
-    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeAutorizacao4",
-    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeAutorizacao4",
+    producao: svcUrl(SVRS_PRODUCAO, "NfeAutorizacao"),
+    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeAutorizacao"),
   },
   NfeRetAutorizacao: {
-    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeRetAutorizacao4",
-    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeRetAutorizacao4",
+    producao: svcUrl(SVRS_PRODUCAO, "NfeRetAutorizacao"),
+    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeRetAutorizacao"),
   },
   NfeCancelamento: {
-    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeCancelamento4",
-    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeCancelamento4",
+    producao: svcUrl(SVRS_PRODUCAO, "NfeCancelamento"),
+    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeCancelamento"),
   },
   NfeInutilizacao: {
-    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeInutilizacao4",
-    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeInutilizacao4",
+    producao: svcUrl(SVRS_PRODUCAO, "NfeInutilizacao"),
+    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeInutilizacao"),
   },
   NfeStatusServico: {
-    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeStatusServico4",
-    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeStatusServico4",
+    producao: svcUrl(SVRS_PRODUCAO, "NfeStatusServico"),
+    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeStatusServico"),
   },
 };
 
