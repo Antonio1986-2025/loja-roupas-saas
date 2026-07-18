@@ -239,7 +239,7 @@ export function buildSoapEnvelope(
   const cleanXml = signedXml.replace(/^<\?xml[^>]*\?>/, "").trim();
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
   <soap:Header>
     <${tags.cabec} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">
       <cUF>${cUf}</cUF>
@@ -287,9 +287,9 @@ export async function sendSoapRequest(
         path: url.pathname,
         method: "POST",
         agent,
+        rejectUnauthorized: false,
         headers: {
-          "Content-Type": 'text/xml;charset=utf-8',
-          "SOAPAction": soapAction,
+          "Content-Type": `application/soap+xml;charset=utf-8;action="${soapAction}"`,
           "Content-Length": Buffer.byteLength(soapXml, "utf-8"),
         },
       },
@@ -308,8 +308,9 @@ export async function sendSoapRequest(
               path: redirectUrl.pathname + redirectUrl.search,
               method: "POST",
               agent,
+              rejectUnauthorized: false,
               headers: {
-                "Content-Type": 'text/xml;charset=utf-8',
+                "Content-Type": `application/soap+xml;charset=utf-8;action="${soapAction}"`,
                 "Content-Length": Buffer.byteLength(soapXml, "utf-8"),
               },
             }, (redirectRes: any) => {
