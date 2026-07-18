@@ -62,6 +62,17 @@ const SERVICOS_MS: Record<string, ServicoEndpoints> = {
   },
 };
 
+// Nome exato do serviço no WSDL (com versão) — usado no namespace do envelope SOAP.
+// Precisa bater com o SOAP Action, senão a SEFAZ (CXF/JAX-WS) retorna NullPointerException.
+const SERVICO_WSDL_NOME: Record<string, string> = {
+  NfeConsultaProtocolo: "NFeConsultaProtocolo4",
+  NfeAutorizacao: "NFeAutorizacao4",
+  NfeRetAutorizacao: "NFeRetAutorizacao4",
+  NfeCancelamento: "NFeRecepcaoEvento4",
+  NfeInutilizacao: "NFeInutilizacao4",
+  NfeStatusServico: "NFeStatusServico4",
+};
+
 // Ações SOAP por serviço
 const SOAP_ACTIONS: Record<string, string> = {
   NfeConsultaProtocolo: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4/consultar",
@@ -238,18 +249,19 @@ export function buildSoapEnvelope(
   };
 
   const tags = serviceTags[servico] || { cabec: "nfeCabecMsg", corpo: "nfeDadosMsg" };
+  const wsdlNome = SERVICO_WSDL_NOME[servico] || servico;
   const cleanXml = signedXml.replace(/^<\?xml[^>]*\?>/, "").trim();
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
   <soap:Header>
-    <${tags.cabec} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">
+    <${tags.cabec} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${wsdlNome}">
       <cUF>${cUf}</cUF>
       <versaoDados>${versaoDados}</versaoDados>
     </${tags.cabec}>
   </soap:Header>
   <soap:Body>
-    <${tags.corpo} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">
+    <${tags.corpo} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${wsdlNome}">
       ${cleanXml}
     </${tags.corpo}>
   </soap:Body>
@@ -361,7 +373,7 @@ export function extractTag(xml: string, tag: string): string | null {
 }
 
 export function parseSoapResponse(xml: string): { body: string } {
-  // SOAP 1.1 ou 1.2
-  const bodyMatch = xml.match(/<soap:Body[^>]*>([\s\S]*?)<\/soap:Body>/);
+  // SOAP 1.1 ou 1.2, prefixo pode variar (soap:, S:, soapenv:, etc.)
+  const bodyMatch = xml.match(/<(?:\w+:)?Body[^>]*>([\s\S]*?)<\/(?:\w+:)?Body>/i);
   return { body: bodyMatch ? bodyMatch[1].trim() : xml };
 }

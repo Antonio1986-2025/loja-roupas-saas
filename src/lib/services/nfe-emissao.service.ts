@@ -146,15 +146,16 @@ interface SefazRetorno {
 }
 
 function parseAutorizacaoResponse(responseXml: string): SefazRetorno {
-  // Tenta extrair o body do SOAP
+  // Tenta extrair o body do SOAP (prefixo pode variar: soap:, S:, soapenv:, ns0:, etc.)
   let body = responseXml;
-  const soapBody = responseXml.match(/<soap:Body>([\s\S]*?)<\/soap:Body>/);
+  const soapBody = responseXml.match(/<(?:\w+:)?Body[^>]*>([\s\S]*?)<\/(?:\w+:)?Body>/i);
   if (soapBody) body = soapBody[1];
 
-  // Verifica se é SOAP fault
-  const fault = body.match(/<soap:Fault>([\s\S]*?)<\/soap:Fault>/);
+  // Verifica se é SOAP fault (mesmo problema de prefixo variável)
+  const fault = body.match(/<(?:\w+:)?Fault[^>]*>([\s\S]*?)<\/(?:\w+:)?Fault>/i);
   if (fault) {
-    throw new NfeEmissaoError("SEFAZ_FAULT", "SOAP Fault: " + fault[1].substring(0, 500));
+    const faultText = extractTag(fault[1], "Text") || extractTag(fault[1], "faultstring") || fault[1];
+    throw new NfeEmissaoError("SEFAZ_FAULT", "SOAP Fault: " + faultText.substring(0, 500));
   }
 
   // Tenta extrair com e sem namespace
