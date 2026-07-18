@@ -259,12 +259,14 @@ export function buildSoapEnvelope(
 
   const tags = serviceTags[servico] || { cabec: "nfeCabecMsg", corpo: "nfeDadosMsg" };
   const wsdlNome = SERVICO_WSDL_NOME[servico] || servico;
-  const cleanXml = signedXml.replace(/^<\?xml[^>]*\?>/, "").trim();
+  const cleanXml = signedXml
+    .replace(/^<\?xml[^>]*\?>/, "")
+    .trim()
+    // Remove whitespace ENTRE tags (>  <) para evitar cStat 588 (caracteres
+    // de edição). Isso é seguro fazer APÓS a assinatura porque a
+    // canonicalização C14N normaliza whitespace no cálculo do digest.
+    .replace(/>\s+</g, "><");
 
-  // A SEFAZ/MS rejeita com cStat 588 quando há caracteres de edição
-  // (newlines/espaços) no início/fim do conteúdo de <nfeDadosMsg> ou entre
-  // as tags da mensagem. Por isso o cleanXml é inserido COLADO nas tags
-  // de abertura/fechamento, sem indentação.
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
   <soap:Header>
