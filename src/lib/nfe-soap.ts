@@ -26,8 +26,9 @@ interface ServicoEndpoints {
 }
 
 // MS - Mato Grosso do Sul (serviço próprio, não SVRS)
-const MS_PRODUCAO = "https://nfe.sefaz.ms.gov.br/services2/services";
-const MS_HOMOLOGACAO = "https://nfe.sefaz.ms.gov.br/services2/services";
+// URLs atualizadas conforme https://www.sefaz.ms.gov.br/documentos-fiscais-eletronicos/nf-e/
+const MS_PRODUCAO = "https://nfe.sefaz.ms.gov.br/ws";
+const MS_HOMOLOGACAO = "https://hom.nfe.sefaz.ms.gov.br/ws";
 
 function svcUrl(base: string, svc: string): string {
   return `${base}/${svc}`;
@@ -35,28 +36,29 @@ function svcUrl(base: string, svc: string): string {
 
 const SERVICOS_MS: Record<string, ServicoEndpoints> = {
   NfeConsultaProtocolo: {
-    producao: svcUrl(MS_PRODUCAO, "NfeConsultaProtocolo4"),
-    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeConsultaProtocolo4"),
+    producao: svcUrl(MS_PRODUCAO, "NFeConsultaProtocolo4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NFeConsultaProtocolo4"),
   },
   NfeAutorizacao: {
-    producao: svcUrl(MS_PRODUCAO, "NfeAutorizacao4"),
-    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeAutorizacao4"),
+    producao: svcUrl(MS_PRODUCAO, "NFeAutorizacao4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NFeAutorizacao4"),
   },
   NfeRetAutorizacao: {
-    producao: svcUrl(MS_PRODUCAO, "NfeRetAutorizacao4"),
-    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeRetAutorizacao4"),
+    producao: svcUrl(MS_PRODUCAO, "NFeRetAutorizacao4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NFeRetAutorizacao4"),
   },
   NfeCancelamento: {
-    producao: svcUrl(MS_PRODUCAO, "NfeCancelamento4"),
-    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeCancelamento4"),
+    // Cancelamento na NFe 4.00 é feito via RecepcaoEvento
+    producao: svcUrl(MS_PRODUCAO, "NFeRecepcaoEvento4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NFeRecepcaoEvento4"),
   },
   NfeInutilizacao: {
-    producao: svcUrl(MS_PRODUCAO, "NfeInutilizacao4"),
-    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeInutilizacao4"),
+    producao: svcUrl(MS_PRODUCAO, "NFeInutilizacao4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NFeInutilizacao4"),
   },
   NfeStatusServico: {
-    producao: svcUrl(MS_PRODUCAO, "NfeStatusServico4"),
-    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeStatusServico4"),
+    producao: svcUrl(MS_PRODUCAO, "NFeStatusServico4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NFeStatusServico4"),
   },
 };
 
@@ -65,7 +67,7 @@ const SOAP_ACTIONS: Record<string, string> = {
   NfeConsultaProtocolo: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4/consultar",
   NfeAutorizacao: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4/nfeAutorizacaoLote",
   NfeRetAutorizacao: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRetAutorizacao4/nfeRetAutorizacaoLote",
-  NfeCancelamento: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeCancelamento4/nfeCancelamentoNF",
+  NfeCancelamento: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4/nfeRecepcaoEvento",
   NfeInutilizacao: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeInutilizacao4/inutilizar",
   NfeStatusServico: "http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4/status",
 };
