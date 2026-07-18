@@ -285,8 +285,12 @@ export async function sendSoapRequest(
       },
       (res) => {
         let data = "";
+        console.log("[SOAP] HTTP status:", res.statusCode, res.headers["content-type"]);
         res.on("data", (chunk: Buffer) => (data += chunk.toString("utf-8")));
-        res.on("end", () => resolve(data));
+        res.on("end", () => {
+          console.log("[SOAP] Response body length:", data.length);
+          resolve(data);
+        });
       }
     );
 
