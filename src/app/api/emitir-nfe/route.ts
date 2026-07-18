@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("[POST /api/test/nfe-emitir]", error);
+    console.error("[POST /api/emitir-nfe]", error);
     return NextResponse.json(
       { error: "ERRO_INTERNO", message: "Erro interno ao emitir NF-e" },
       { status: 500 }
