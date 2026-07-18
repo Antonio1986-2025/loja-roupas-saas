@@ -28,6 +28,7 @@ import {
   type NfeTotalData,
   type NfePagamento,
 } from "@/lib/services/nfe-xml.service";
+import { getIbgeCodigoCidade } from "@/lib/ibge";
 
 export class NfeEmissaoError extends Error {
   code: string;
@@ -226,6 +227,28 @@ export async function emitirNFe(
     inscricaoEstadual: (cliente as any)?.inscricaoEstadual || undefined,
     indIEDest: (cliente as any)?.indIEDest ?? 9,
   };
+
+  // Resolve o código IBGE real da cidade do cliente (antes era sempre
+  // o código de Campo Grande, mesmo para clientes de outras cidades).
+  // Se a cidade do cliente for igual à do emitente, evita a chamada de rede.
+  if (destinatario.endereco && destinatario.cidade) {
+    if (
+      destinatario.cidade.trim().toLowerCase() === emitente.cidade.trim().toLowerCase() &&
+      (destinatario.estado || "MS").trim().toUpperCase() === (emitente.estado || "MS").trim().toUpperCase()
+    ) {
+      destinatario.ibgeCodigoCidade = emitente.ibgeCodigoCidade;
+    } else {
+      const codigo = await getIbgeCodigoCidade(destinatario.estado || "MS", destinatario.cidade);
+      if (codigo) {
+        destinatario.ibgeCodigoCidade = codigo;
+      } else {
+        console.warn(
+          `[NF-e] Não foi possível resolver o código IBGE de "${destinatario.cidade}/${destinatario.estado}". Usando código do emitente como fallback (pode ficar geograficamente incorreto).`
+        );
+        destinatario.ibgeCodigoCidade = emitente.ibgeCodigoCidade;
+      }
+    }
+  }
 
   // 5. Preparar itens (com varianteId real, necessário para FK)
   const itensComVariante = venda.itens

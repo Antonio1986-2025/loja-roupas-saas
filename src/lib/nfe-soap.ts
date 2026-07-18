@@ -173,8 +173,13 @@ export function signXml(
 ): string {
   const { SignedXml } = require("xml-crypto");
 
+  // O schema oficial da NF-e (xmldsig-core-schema) usa "fixed value" nos
+  // atributos Algorithm de SignatureMethod/DigestMethod: SOMENTE
+  // rsa-sha1 / sha1 são aceitos (mesmo com certificados modernos). Usar
+  // SHA-256 aqui viola o schema e causa rejeição "Falha no esquema XML"
+  // (cStat 215) — confirmado validando localmente contra o XSD oficial.
   const sig = new SignedXml();
-  sig.signatureAlgorithm = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+  sig.signatureAlgorithm = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
   sig.canonicalizationAlgorithm = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315";
   sig.addReference({
     xpath: referenceXPath,
@@ -182,14 +187,18 @@ export function signXml(
       "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
       "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
     ],
-    digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+    digestAlgorithm: "http://www.w3.org/2000/09/xmldsig#sha1",
     uri: referenceUri || undefined,
   });
   sig.privateKey = keyPem;
-  sig.keyInfoProvider = {
-    getKeyInfo: () =>
-      `<X509Data><X509Certificate>${certToBase64(certPem)}</X509Certificate></X509Data>`,
-  };
+  // IMPORTANTE: xml-crypto v6 removeu a API antiga `keyInfoProvider`
+  // (objeto com método getKeyInfo). Ela era simplesmente ignorada em
+  // silêncio, então o <KeyInfo>/<X509Certificate> nunca era incluído na
+  // assinatura — e o schema da NF-e EXIGE o elemento <KeyInfo> dentro de
+  // <Signature>. A API correta na v6 é a propriedade `publicCert`: a
+  // biblioteca gera o <X509Data><X509Certificate> automaticamente a partir
+  // dela (confirmado validando localmente contra o XSD oficial).
+  sig.publicCert = certPem;
   sig.computeSignature(xml);
   return sig.getSignedXml();
 }

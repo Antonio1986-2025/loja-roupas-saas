@@ -39,6 +39,7 @@ export interface DestinatarioData {
   email?: string;
   inscricaoEstadual?: string;
   indIEDest?: number;
+  ibgeCodigoCidade?: string; // código IBGE (7 dígitos) do município do destinatário
 }
 
 export interface NfeItemData {
@@ -182,8 +183,17 @@ export function gerarCNF(): string {
 // Blocos do XML
 // ============================================
 
+// idDest: 1=Interna (mesmo estado), 2=Interestadual, 3=Exterior.
+// Antes era sempre "1", o que geraria dado fiscal incorreto em vendas
+// interestaduais (cliente de outro estado).
+function calcularIdDest(estadoEmitente: string, estadoDestinatario?: string): string {
+  if (!estadoDestinatario) return "1";
+  return estadoEmitente.trim().toUpperCase() === estadoDestinatario.trim().toUpperCase() ? "1" : "2";
+}
+
 function buildIdeTag(params: NfeEmissaoParams): string {
   const dt = params.dataEmissao;
+  const idDest = calcularIdDest(params.emitente.estado || "MS", params.destinatario.estado);
   return `<ide>
     <cUF>${CODIGO_UF}</cUF>
     <cNF>${params.cNF}</cNF>
@@ -194,7 +204,7 @@ function buildIdeTag(params: NfeEmissaoParams): string {
     <dhEmi>${formatDateISO(dt)}</dhEmi>
     <dhSaiEnt>${formatDateISO(dt)}</dhSaiEnt>
     <tpNF>1</tpNF>
-    <idDest>1</idDest>
+    <idDest>${idDest}</idDest>
     <cMunFG>${params.emitente.ibgeCodigoCidade || "5002704"}</cMunFG>
     <tpImp>${params.modelo === "65" ? "5" : "1"}</tpImp>
     <tpEmis>1</tpEmis>
@@ -206,6 +216,14 @@ function buildIdeTag(params: NfeEmissaoParams): string {
     <procEmi>0</procEmi>
     <verProc>StoriSaaS 1.0</verProc>
   </ide>`;
+}
+
+// Schema NFe 4.00 (TEndereco/TEnderEmi): <fone>, quando presente,
+// exige padrão [0-9]{6,14}. Uma tag vazia ("") viola o schema (cStat 215).
+function buildFoneTag(telefone?: string): string {
+  const digitos = (telefone || "").replace(/\D/g, "");
+  if (digitos.length < 6) return ""; // omite a tag em vez de mandar vazia
+  return `<fone>${digitos.slice(0, 14)}</fone>`;
 }
 
 function buildEmitTag(emit: EmitenteData, crt: string): string {
@@ -231,7 +249,7 @@ function buildEmitTag(emit: EmitenteData, crt: string): string {
       <CEP>${(emit.cep || "00000000").replace(/\D/g, "")}</CEP>
       <cPais>1058</cPais>
       <xPais>BRASIL</xPais>
-      <fone>${(emit.telefone || "").replace(/\D/g, "").slice(0, 14)}</fone>
+      ${buildFoneTag(emit.telefone)}
     </enderEmit>
     ${ie}
     ${im}
@@ -253,11 +271,14 @@ function buildDestTag(dest: DestinatarioData): string {
 
   let enderDest = "";
   if (dest.endereco) {
+    // cMun: usa o código IBGE real do município do destinatário quando disponível
+    // (antes era fixo em "5002704" = Campo Grande, mesmo para clientes de outras cidades).
+    const cMun = dest.ibgeCodigoCidade || "5002704";
     enderDest = `<enderDest>
       <xLgr>${escapeXml(removeAcentos(dest.endereco).slice(0, 60))}</xLgr>
       <nro>${escapeXml((dest.numero || "S/N").slice(0, 60))}</nro>
       <xBairro>${escapeXml(removeAcentos(dest.bairro || "Centro").slice(0, 60))}</xBairro>
-      <cMun>5002704</cMun>
+      <cMun>${cMun}</cMun>
       <xMun>${escapeXml(removeAcentos(dest.cidade || "Campo Grande").slice(0, 60))}</xMun>
       <UF>${dest.estado || "MS"}</UF>
       <CEP>${(dest.cep || "00000000").replace(/\D/g, "")}</CEP>
@@ -266,19 +287,53 @@ function buildDestTag(dest: DestinatarioData): string {
     </enderDest>`;
   }
 
+  // Schema NFe 4.00 (TDest): <email>, quando presente, exige minLength=1.
+  // Uma tag <email></email> vazia viola o schema e causa rejeição cStat 215
+  // "Falha no esquema XML". Por isso a tag só é emitida quando há valor real.
+  const emailTag = dest.email && dest.email.trim() ? `<email>${escapeXml(dest.email.trim())}</email>` : "";
+
   return `<dest>
     ${docTag}
     <xNome>${escapeXml(removeAcentos(dest.nome).slice(0, 60))}</xNome>
     ${enderDest}
     <indIEDest>${indIE}</indIEDest>
     ${ieTag}
-    <email>${escapeXml(dest.email || "")}</email>
+    ${emailTag}
   </dest>`;
 }
 
+// Schema NFe 4.00 (cEAN/cEANTrib): só aceita "SEM GTIN", vazio, 8 dígitos ou 12-14
+// dígitos. Um GTIN com outro tamanho (ex.: 9-11 dígitos por erro de cadastro)
+// viola o schema. Por segurança, cai para "SEM GTIN" quando o tamanho não bate.
+function buildGtinTag(codigoBarras: string | undefined): string {
+  if (!codigoBarras) return "SEM GTIN";
+  const digitos = codigoBarras.replace(/\D/g, "");
+  if (digitos.length === 8 || (digitos.length >= 12 && digitos.length <= 14)) {
+    return digitos;
+  }
+  console.warn(`[NF-e] Código de barras "${codigoBarras}" com tamanho inválido para GTIN (${digitos.length} dígitos) — usando "SEM GTIN".`);
+  return "SEM GTIN";
+}
+
+// Schema NFe 4.00 (NCM): exige exatamente 2 dígitos (uso genérico/serviço) ou
+// exatamente 8 dígitos. Um NCM com outro tamanho (ex.: zero à esquerda perdido
+// no cadastro) viola o schema. Preenche com zeros à esquerda quando plausível.
+function buildNcmTag(ncm: string | undefined): string {
+  const fallback = "62046200";
+  if (!ncm) return fallback;
+  let digitos = ncm.replace(/\D/g, "");
+  if (digitos.length > 0 && digitos.length < 8) {
+    digitos = digitos.padStart(8, "0");
+  }
+  if (digitos.length === 2 || digitos.length === 8) return digitos;
+  console.warn(`[NF-e] NCM "${ncm}" com tamanho inválido (${digitos.length} dígitos) — usando fallback "${fallback}".`);
+  return fallback;
+}
+
 function buildProdTag(item: NfeItemData): string {
-  const cEAN = item.codigoBarras ? `<cEAN>${item.codigoBarras.replace(/\D/g, "").slice(0, 14)}</cEAN>` : `<cEAN>SEM GTIN</cEAN>`;
-  const ncm = item.ncm ? `<NCM>${item.ncm.replace(/\D/g, "")}</NCM>` : `<NCM>62046200</NCM>`;
+  const cEAN = `<cEAN>${buildGtinTag(item.codigoBarras)}</cEAN>`;
+  const cEANTrib = `<cEANTrib>${buildGtinTag(item.codigoBarras)}</cEANTrib>`;
+  const ncm = `<NCM>${buildNcmTag(item.ncm)}</NCM>`;
   const cest = item.cest ? `<CEST>${item.cest.replace(/\D/g, "")}</CEST>` : "";
   const cfop = item.cfop || "5102";
 
@@ -293,7 +348,7 @@ function buildProdTag(item: NfeItemData): string {
       <qCom>${formatDecimal(item.quantidade)}</qCom>
       <vUnCom>${formatDecimal(item.precoUnitario)}</vUnCom>
       <vProd>${formatDecimal(item.valorTotal)}</vProd>
-      <cEANTrib>SEM GTIN</cEANTrib>
+      ${cEANTrib}
       <uTrib>UN</uTrib>
       <qTrib>${formatDecimal(item.quantidade)}</qTrib>
       <vUnTrib>${formatDecimal(item.precoUnitario)}</vUnTrib>
@@ -301,22 +356,43 @@ function buildProdTag(item: NfeItemData): string {
     </prod>`;
 }
 
+// Schema NFe 4.00: cada CSOSN usa um grupo <ICMS...> DIFERENTE, com campos
+// próprios. O bug anterior sempre montava <ICMSSN102> mas incluía <pCredSN>/
+// <vCredICMSSN> — campos que só existem no grupo <ICMSSN101> (CSOSN 101,
+// "com permissão de crédito"). Para CSOSN 102/103/300/400 ("sem permissão de
+// crédito") o schema só aceita <orig> e <CSOSN> — qualquer campo extra é
+// rejeitado com "Falha no esquema XML" (cStat 215). Isso ocorria em 100% das
+// notas, pois o CSOSN padrão do sistema é "102".
+function buildIcmsGroupTag(csosn: string, origem: number, valorTotal: number): string {
+  if (csosn === "101") {
+    const pCredSN = 2.6; // alíquota de crédito do Simples Nacional
+    const vCredICMSSN = valorTotal * (pCredSN / 100);
+    return `<ICMSSN101>
+        <orig>${origem}</orig>
+        <CSOSN>101</CSOSN>
+        <pCredSN>${formatDecimal(pCredSN)}</pCredSN>
+        <vCredICMSSN>${formatDecimal(vCredICMSSN)}</vCredICMSSN>
+      </ICMSSN101>`;
+  }
+
+  // 102, 103, 300, 400 (e qualquer outro código não tratado explicitamente,
+  // como fallback seguro sem campos extras que violem o schema).
+  const csosnValido = ["102", "103", "300", "400"].includes(csosn) ? csosn : "102";
+  return `<ICMSSN102>
+        <orig>${origem}</orig>
+        <CSOSN>${csosnValido}</CSOSN>
+      </ICMSSN102>`;
+}
+
 function buildImpostoTag(item: NfeItemData): string {
   const csosn = item.csosn || "102";
   const origem = item.origem !== undefined ? item.origem : 0;
-  const pCredSN = 2.60; // alíquota crédito Simples Nacional 2024
-  const vCredICMSSN = item.valorTotal * (pCredSN / 100);
 
   // PIS e COFINS para Simples: CST 49 (outras operações - sem débito/crédito)
   return `<imposto>
     <vTotTrib>${formatDecimal(item.valorTotal * 0.026)}</vTotTrib>
     <ICMS>
-      <ICMSSN102>
-        <orig>${origem}</orig>
-        <CSOSN>${csosn}</CSOSN>
-        <pCredSN>${formatDecimal(pCredSN)}</pCredSN>
-        <vCredICMSSN>${formatDecimal(vCredICMSSN)}</vCredICMSSN>
-      </ICMSSN102>
+      ${buildIcmsGroupTag(csosn, origem, item.valorTotal)}
     </ICMS>
     <PIS>
       <PISOutr>
@@ -344,20 +420,31 @@ function buildDetTag(item: NfeItemData, nItem: number): string {
   </det>`;
 }
 
+// Schema NFe 4.00 (ICMSTot): faltavam os campos OBRIGATÓRIOS <vFCP>, <vBCST>
+// (na posição certa), <vST>, <vFCPST>, <vFCPSTRet> e <vIPIDevol>. Sem eles
+// (ou fora de ordem), a SEFAZ rejeita TODA E QUALQUER nota com "Falha no
+// esquema XML" (cStat 215) — isso explica por que 100% das emissões falhavam,
+// independente dos dados do cliente. Como esta loja não trabalha com
+// Substituição Tributária/FCP/IPI, os valores ficam zerados, mas as tags
+// precisam existir na ordem exata definida pelo schema.
 function buildTotalTag(totais: NfeTotalData): string {
   return `<total>
     <ICMSTot>
       <vBC>${formatDecimal(totais.baseCalculoICMS)}</vBC>
       <vICMS>${formatDecimal(totais.valorICMS)}</vICMS>
       <vICMSDeson>0.00</vICMSDeson>
+      <vFCP>0.00</vFCP>
       <vBCST>0.00</vBCST>
       <vST>0.00</vST>
+      <vFCPST>0.00</vFCPST>
+      <vFCPSTRet>0.00</vFCPSTRet>
       <vProd>${formatDecimal(totais.valorProdutos)}</vProd>
       <vFrete>${formatDecimal(totais.valorFrete)}</vFrete>
       <vSeg>${formatDecimal(totais.valorSeguro)}</vSeg>
       <vDesc>${formatDecimal(totais.valorDesconto)}</vDesc>
       <vII>0.00</vII>
       <vIPI>0.00</vIPI>
+      <vIPIDevol>0.00</vIPIDevol>
       <vPIS>0.00</vPIS>
       <vCOFINS>0.00</vCOFINS>
       <vOutro>0.00</vOutro>
