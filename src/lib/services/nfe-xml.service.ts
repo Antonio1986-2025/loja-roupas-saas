@@ -537,18 +537,28 @@ export function buildNFeXml(params: NfeEmissaoParams, chaveAcesso: string): stri
 // Envelopar em <enviNFe> para envio
 // ============================================
 
+// A SEFAZ/MS rejeita com cStat 588 quando o XML contém caracteres de
+// edição (newlines/espaços) entre as tags. Por isso o XML é minificado
+// ANTES da assinatura digital (diferente do que fizemos na primeira
+// tentativa, onde a minificação após a assinatura causou cStat 297).
+function minifyXml(xml: string): string {
+  return xml.replace(/>\s+</g, "><").trim();
+}
+
 export function buildEnviNFe(
   nfeXml: string,
   idLote: string,
   indSinc: string = "1" // 1=síncrono
 ): string {
   const cleanXml = nfeXml.replace(/^<\?xml[^>]*\?>/, "").trim();
-  return `<?xml version="1.0" encoding="UTF-8"?>
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <enviNFe versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
   <idLote>${idLote}</idLote>
   <indSinc>${indSinc}</indSinc>
   ${cleanXml}
 </enviNFe>`;
+  // Minificar ANTES da assinatura — senão a SEFAZ rejeita com cStat 297
+  return minifyXml(xml);
 }
 
 // ============================================

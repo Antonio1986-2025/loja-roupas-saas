@@ -259,14 +259,11 @@ export function buildSoapEnvelope(
 
   const tags = serviceTags[servico] || { cabec: "nfeCabecMsg", corpo: "nfeDadosMsg" };
   const wsdlNome = SERVICO_WSDL_NOME[servico] || servico;
-  // SEFAZ (cStat 588) rejeita caracteres de edição (newlines/espaços)
-  // entre as tags XML — o conteúdo do <nfeDadosMsg> deve vir sem quebras.
-  // (Confirmado: o template literal com indentação no XML da NF-e gerava
-  // newlines que a SEFAZ/MS rejeitava.)
-  const cleanXml = signedXml
-    .replace(/^<\?xml[^>]*\?>/, "")
-    .replace(/>\s+</g, "><")
-    .trim();
+  // IMPORTANTE: a minificação (remoção de whitespace entre tags) deve
+  // acontecer ANTES da assinatura (em buildEnviNFe), NÃO aqui — senão a
+  // assinatura é calculada sobre o XML com newlines e a SEFAZ rejeita com
+  // cStat 297 "Assinatura difere do calculado".
+  const cleanXml = signedXml.replace(/^<\?xml[^>]*\?>/, "").trim();
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
