@@ -576,8 +576,11 @@ function formatDateISO(d: Date): string {
   return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "-03:00");
 }
 
+// Ver comentário equivalente em nfe-xml.service.ts: o schema NFe (TString)
+// não aceita espaços no início/fim do texto.
 function escapeXml(str: string): string {
   return str
+    .trim()
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

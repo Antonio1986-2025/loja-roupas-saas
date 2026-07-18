@@ -121,8 +121,15 @@ function formatDecimal(valor: number): string {
   return valor.toFixed(2);
 }
 
+// Schema NFe 4.00 (TString): o padrão exige que o texto comece e termine
+// com caractere não-espaço ("[!-ÿ]{1}[ -ÿ]*[!-ÿ]{1}"). Um valor com espaço
+// no início/fim (ex.: nome de cliente cadastrado como "BERENICE BEZERRA ")
+// viola o schema e causa "Falha no esquema XML" (cStat 215) — confirmado
+// em teste real. Por isso o trim() é sempre aplicado aqui, no ponto comum
+// por onde passa todo texto livre inserido no XML.
 function escapeXml(str: string): string {
   return str
+    .trim()
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

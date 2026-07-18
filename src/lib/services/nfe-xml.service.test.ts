@@ -158,6 +158,17 @@ describe("nfe-xml.service — regras de schema NFe 4.00", () => {
     expect(xml).toContain("<cEAN>7891234567895</cEAN>");
   });
 
+  it("escapeXml remove espaços nas pontas (TString não aceita no schema NFe 4.00)", () => {
+    const params = baseParams();
+    params.destinatario.nome = "  CLIENTE TESTE  ";
+    params.destinatario.endereco = "Rua Teste ";
+    const xml = buildInfNFe(params, "chave-teste");
+    expect(xml).toContain("<xNome>CLIENTE TESTE</xNome>");
+    expect(xml).toContain("<xLgr>Rua Teste</xLgr>");
+    expect(xml).not.toMatch(/  CLIENTE TESTE  </);
+    expect(xml).not.toMatch(/Rua Teste <\/xLgr>/);
+  });
+
   it("buildNFeXml produz XML bem formado com declaração e namespace", () => {
     const params = baseParams();
     const xml = buildNFeXml(params, "chave-teste");
