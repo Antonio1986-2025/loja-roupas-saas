@@ -25,46 +25,38 @@ interface ServicoEndpoints {
   homologacao: string;
 }
 
-// SVRS - Serviço Virtual RS (usado por MS e outros estados)
-const SVRS_PRODUCAO = "https://nfe.svrs.rs.gov.br/ws";
-const SVRS_HOMOLOGACAO = "https://nfe-homologacao.svrs.rs.gov.br/ws";
+// MS - Mato Grosso do Sul (serviço próprio, não SVRS)
+const MS_PRODUCAO = "https://nfe.sefaz.ms.gov.br/services2/services";
+const MS_HOMOLOGACAO = "https://nfe.sefaz.ms.gov.br/services2/services";
 
 function svcUrl(base: string, svc: string): string {
-  const svcPath: Record<string, string> = {
-    NfeConsultaProtocolo: "NfeConsultaProtocolo/NfeConsultaProtocolo4.asmx",
-    NfeAutorizacao: "NfeAutorizacao/NFeAutorizacao4.asmx",
-    NfeRetAutorizacao: "NfeRetAutorizacao/NFeRetAutorizacao4.asmx",
-    NfeCancelamento: "NfeCancelamento/NFeCancelamento4.asmx",
-    NfeInutilizacao: "NfeInutilizacao/NFeInutilizacao4.asmx",
-    NfeStatusServico: "NfeStatusServico/NFeStatusServico4.asmx",
-  };
-  return `${base}/${svcPath[svc] || svc}`;
+  return `${base}/${svc}`;
 }
 
 const SERVICOS_MS: Record<string, ServicoEndpoints> = {
   NfeConsultaProtocolo: {
-    producao: svcUrl(SVRS_PRODUCAO, "NfeConsultaProtocolo"),
-    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeConsultaProtocolo"),
+    producao: svcUrl(MS_PRODUCAO, "NfeConsultaProtocolo4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeConsultaProtocolo4"),
   },
   NfeAutorizacao: {
-    producao: svcUrl(SVRS_PRODUCAO, "NfeAutorizacao"),
-    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeAutorizacao"),
+    producao: svcUrl(MS_PRODUCAO, "NfeAutorizacao4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeAutorizacao4"),
   },
   NfeRetAutorizacao: {
-    producao: svcUrl(SVRS_PRODUCAO, "NfeRetAutorizacao"),
-    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeRetAutorizacao"),
+    producao: svcUrl(MS_PRODUCAO, "NfeRetAutorizacao4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeRetAutorizacao4"),
   },
   NfeCancelamento: {
-    producao: svcUrl(SVRS_PRODUCAO, "NfeCancelamento"),
-    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeCancelamento"),
+    producao: svcUrl(MS_PRODUCAO, "NfeCancelamento4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeCancelamento4"),
   },
   NfeInutilizacao: {
-    producao: svcUrl(SVRS_PRODUCAO, "NfeInutilizacao"),
-    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeInutilizacao"),
+    producao: svcUrl(MS_PRODUCAO, "NfeInutilizacao4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeInutilizacao4"),
   },
   NfeStatusServico: {
-    producao: svcUrl(SVRS_PRODUCAO, "NfeStatusServico"),
-    homologacao: svcUrl(SVRS_HOMOLOGACAO, "NfeStatusServico"),
+    producao: svcUrl(MS_PRODUCAO, "NfeStatusServico4"),
+    homologacao: svcUrl(MS_HOMOLOGACAO, "NfeStatusServico4"),
   },
 };
 
