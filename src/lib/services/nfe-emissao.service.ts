@@ -227,20 +227,27 @@ export async function emitirNFe(
     indIEDest: (cliente as any)?.indIEDest ?? 9,
   };
 
-  // 5. Preparar itens
-  const itens: NfeItemData[] = venda.itens.map((vi) => ({
-    codigo: vi.variante.codigoInterno || vi.variante.id.slice(0, 8),
-    codigoBarras: vi.variante.codigoBarras || undefined,
-    nome: vi.variante.produto.nome,
-    ncm: (vi.variante.produto as any).ncm || undefined,
-    cfop: (vi.variante as any).cfop || config?.cfopPadrao || "5102",
-    cest: (vi.variante.produto as any).cest || undefined,
-    csosn: (vi.variante as any).csosn || "102",
-    origem: (vi.variante as any).origem ?? 0,
-    quantidade: vi.quantidade - (vi.qtdDevolvida || 0),
-    precoUnitario: Number(vi.precoUnit),
-    valorTotal: Number(vi.subtotal),
-  })).filter((i) => i.quantidade > 0);
+  // 5. Preparar itens (com varianteId real, necessário para FK)
+  const itensComVariante = venda.itens
+    .map((vi) => ({
+      varianteId: vi.varianteId,
+      nfeItem: {
+        codigo: vi.variante.codigoInterno || vi.variante.id.slice(0, 8),
+        codigoBarras: vi.variante.codigoBarras || undefined,
+        nome: vi.variante.produto.nome,
+        ncm: (vi.variante.produto as any).ncm || undefined,
+        cfop: (vi.variante as any).cfop || config?.cfopPadrao || "5102",
+        cest: (vi.variante.produto as any).cest || undefined,
+        csosn: (vi.variante as any).csosn || "102",
+        origem: (vi.variante as any).origem ?? 0,
+        quantidade: vi.quantidade - (vi.qtdDevolvida || 0),
+        precoUnitario: Number(vi.precoUnit),
+        valorTotal: Number(vi.subtotal),
+      } as NfeItemData,
+    }))
+    .filter((i) => i.nfeItem.quantidade > 0);
+
+  const itens: NfeItemData[] = itensComVariante.map((i) => i.nfeItem);
 
   if (itens.length === 0) {
     throw new NfeEmissaoError("SEM_ITENS", "Não há itens para emitir NF-e");
@@ -319,6 +326,7 @@ export async function emitirNFe(
   const soapXml = buildSoapEnvelope(enviNFe, "NfeAutorizacao", CODIGO_UF, "4.00");
 
   console.log(`[NF-e] Enviando NF-e #${numero} para ${endpoint} (ambiente=${ambiente})`);
+  console.log("[NF-e] XML enviNFe (first 1500 chars):", enviNFe.substring(0, 1500));
 
   let responseXml: string;
   try {
@@ -399,42 +407,25 @@ export async function emitirNFe(
       ambiente: Number(ambiente),
       dataEmissao: new Date(),
       itens: {
-        create: itens.map((item) => ({
-          varianteId: item.codigo, // será corrigido abaixo
-          quantidade: item.quantidade,
-          precoUnitario: item.precoUnitario,
-          valorTotal: item.valorTotal,
-          ncm: item.ncm || undefined,
-          cfop: item.cfop || undefined,
-          csosn: item.csosn || "102",
-          origem: item.origem || 0,
-          aliquotaICMS: item.aliquotaICMS || undefined,
+        create: itensComVariante.map((item) => ({
+          varianteId: item.varianteId,
+          quantidade: item.nfeItem.quantidade,
+          precoUnitario: item.nfeItem.precoUnitario,
+          valorTotal: item.nfeItem.valorTotal,
+          ncm: item.nfeItem.ncm || undefined,
+          cfop: item.nfeItem.cfop || undefined,
+          csosn: item.nfeItem.csosn || "102",
+          origem: item.nfeItem.origem || 0,
+          aliquotaICMS: (item.nfeItem as any).aliquotaICMS || undefined,
         })),
       },
     },
   });
 
-  // 17. Corrigir varianteId nos itens (precisamos do ID real)
-  const varianteMap = new Map<string, string>();
-  for (const vi of venda.itens) {
-    const codInterno = vi.variante.codigoInterno || vi.variante.id.slice(0, 8);
-    varianteMap.set(codInterno, vi.varianteId);
-  }
-
-  for (const item of itens) {
-    const realVarianteId = varianteMap.get(item.codigo);
-    if (realVarianteId) {
-      await (prisma.notaFiscalItem as any).updateMany({
-        where: { notaFiscalId: nota.id, varianteId: item.codigo },
-        data: { varianteId: realVarianteId },
-      });
-    }
-  }
-
-  // 18. Incrementar numeração
+  // 17. Incrementar numeração
   await incrementarNumero(tenantId, modelo, numero + 1);
 
-  // 19. Verificar se foi autorizada
+  // 18. Verificar se foi autorizada
   if (statusNfe === "REJEITADA" || statusNfe === "DENEGADA") {
     throw new NfeEmissaoError(
       `SEFAZ_${retorno.cStat}`,
