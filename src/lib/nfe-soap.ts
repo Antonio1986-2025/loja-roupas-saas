@@ -284,8 +284,38 @@ export async function sendSoapRequest(
         },
       },
       (res) => {
+        // Seguir redirect (302)
+        if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
+          const loc = res.headers.location;
+          console.log("[SOAP] Redirect to:", loc);
+          if (loc) {
+            const redirectUrl = new URL(loc.startsWith("http") ? loc : `${url.protocol}//${url.hostname}${loc}`);
+            // Seguir com nova requisição (recursivo simples)
+            const httpsMod = require("https");
+            const redirectReq = httpsMod.request({
+              hostname: redirectUrl.hostname,
+              port: 443,
+              path: redirectUrl.pathname + redirectUrl.search,
+              method: "POST",
+              agent,
+              headers: {
+                "Content-Type": 'application/soap+xml;charset=utf-8;action="' + soapAction + '"',
+                "Content-Length": Buffer.byteLength(soapXml, "utf-8"),
+              },
+            }, (redirectRes: any) => {
+              let data = "";
+              redirectRes.on("data", (chunk: Buffer) => (data += chunk.toString("utf-8")));
+              redirectRes.on("end", () => resolve(data));
+            });
+            redirectReq.on("error", (err: Error) => reject(err));
+            redirectReq.setTimeout(30000);
+            redirectReq.write(soapXml, "utf-8");
+            redirectReq.end();
+            return;
+          }
+        }
         let data = "";
-        console.log("[SOAP] HTTP status:", res.statusCode, res.headers["content-type"]);
+        console.log("[SOAP] HTTP status:", res.statusCode);
         res.on("data", (chunk: Buffer) => (data += chunk.toString("utf-8")));
         res.on("end", () => {
           console.log("[SOAP] Response body length:", data.length);
