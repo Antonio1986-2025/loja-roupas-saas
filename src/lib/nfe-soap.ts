@@ -259,12 +259,12 @@ export function buildSoapEnvelope(
 
   const tags = serviceTags[servico] || { cabec: "nfeCabecMsg", corpo: "nfeDadosMsg" };
   const wsdlNome = SERVICO_WSDL_NOME[servico] || servico;
-  // IMPORTANTE: a minificação (remoção de whitespace entre tags) deve
-  // acontecer ANTES da assinatura (em buildEnviNFe), NÃO aqui — senão a
-  // assinatura é calculada sobre o XML com newlines e a SEFAZ rejeita com
-  // cStat 297 "Assinatura difere do calculado".
   const cleanXml = signedXml.replace(/^<\?xml[^>]*\?>/, "").trim();
 
+  // A SEFAZ/MS rejeita com cStat 588 quando há caracteres de edição
+  // (newlines/espaços) no início/fim do conteúdo de <nfeDadosMsg> ou entre
+  // as tags da mensagem. Por isso o cleanXml é inserido COLADO nas tags
+  // de abertura/fechamento, sem indentação.
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
   <soap:Header>
@@ -274,9 +274,7 @@ export function buildSoapEnvelope(
     </${tags.cabec}>
   </soap:Header>
   <soap:Body>
-    <${tags.corpo} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${wsdlNome}">
-      ${cleanXml}
-    </${tags.corpo}>
+    <${tags.corpo} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${wsdlNome}>${cleanXml}</${tags.corpo}>
   </soap:Body>
 </soap:Envelope>`;
 }
