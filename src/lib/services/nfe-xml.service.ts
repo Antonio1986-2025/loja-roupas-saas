@@ -110,7 +110,10 @@ function formatCPF_CNPJ(valor: string): string {
 }
 
 function formatDateISO(d: Date): string {
-  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "-03:00");
+  // Desloca para horário de Brasília (UTC-3) e mantém separadores.
+  // O schema xs:dateTime da NF-e exige o formato completo AAAA-MM-DDThh:mm:ss-03:00.
+  const local = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+  return local.toISOString().replace(/\.\d{3}Z$/, "-03:00");
 }
 
 function formatDecimal(valor: number): string {

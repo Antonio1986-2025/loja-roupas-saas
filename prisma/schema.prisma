@@ -555,7 +555,7 @@ model NotaFiscal {
   dataEmissao        DateTime     @default(now())
   observacao         String?
   createdAt          DateTime     @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime     @updatedAt
 
   tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   venda              Venda?       @relation(fields: [vendaId], references: [id], onDelete: SetNull)
