@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+  <soap:Header>
+    <nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4">
+      <cUF>50</cUF>
+      <versaoDados>4.00</versaoDados>
+    </nfeCabecMsg>
+  </soap:Header>
+  <soap:Body>
+    <nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4"><enviNFe versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
+  <idLote>12345</idLote>
+  <indSinc>1</indSinc>
+  <NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+  <infNFe versao="4.00" Id="NFeTESTE">
+    <ide>
+      <cUF>50</cUF>
+      <cNF>12345678</cNF>
+    </ide>
+  </infNFe>
+  </NFe>
+</enviNFe></nfeDadosMsg>
+  </soap:Body>
+</soap:Envelope>
