@@ -27,28 +27,28 @@ interface ServicoEndpoints {
 
 const SERVICOS_MS: Record<string, ServicoEndpoints> = {
   NfeConsultaProtocolo: {
-    producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeConsultaProtocolo4",
-    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeConsultaProtocolo4",
+    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeConsultaProtocolo4",
+    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeConsultaProtocolo4",
   },
   NfeAutorizacao: {
-    producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeAutorizacao4",
-    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeAutorizacao4",
+    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeAutorizacao4",
+    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeAutorizacao4",
   },
   NfeRetAutorizacao: {
-    producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeRetAutorizacao4",
-    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeRetAutorizacao4",
+    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeRetAutorizacao4",
+    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeRetAutorizacao4",
   },
   NfeCancelamento: {
-    producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeCancelamento4",
-    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeCancelamento4",
+    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeCancelamento4",
+    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeCancelamento4",
   },
   NfeInutilizacao: {
-    producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeInutilizacao4",
-    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeInutilizacao4",
+    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeInutilizacao4",
+    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeInutilizacao4",
   },
   NfeStatusServico: {
-    producao: "https://nfe.sefaz.ms.gov.br/nfe-ws/NfeStatusServico4",
-    homologacao: "https://hom.sefaz.ms.gov.br/nfe-ws/NfeStatusServico4",
+    producao: "https://nfe.sefaz.ms.gov.br/ws/NFeStatusServico4",
+    homologacao: "https://hom.sefaz.ms.gov.br/ws/NFeStatusServico4",
   },
 };
 
@@ -231,7 +231,7 @@ export function buildSoapEnvelope(
   const cleanXml = signedXml.replace(/^<\?xml[^>]*\?>/, "").trim();
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
   <soap:Header>
     <${tags.cabec} xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">
       <cUF>${cUf}</cUF>
@@ -279,7 +279,8 @@ export async function sendSoapRequest(
         method: "POST",
         agent,
         headers: {
-          "Content-Type": `application/soap+xml;charset=utf-8;action="${soapAction}"`,
+          "Content-Type": 'text/xml;charset=utf-8',
+          "SOAPAction": soapAction,
           "Content-Length": Buffer.byteLength(soapXml, "utf-8"),
         },
       },
@@ -299,7 +300,7 @@ export async function sendSoapRequest(
               method: "POST",
               agent,
               headers: {
-                "Content-Type": 'application/soap+xml;charset=utf-8;action="' + soapAction + '"',
+                "Content-Type": 'text/xml;charset=utf-8',
                 "Content-Length": Buffer.byteLength(soapXml, "utf-8"),
               },
             }, (redirectRes: any) => {
@@ -348,6 +349,7 @@ export function extractTag(xml: string, tag: string): string | null {
 }
 
 export function parseSoapResponse(xml: string): { body: string } {
-  const bodyMatch = xml.match(/<soap:Body>([\s\S]*?)<\/soap:Body>/);
+  // SOAP 1.1 ou 1.2
+  const bodyMatch = xml.match(/<soap:Body[^>]*>([\s\S]*?)<\/soap:Body>/);
   return { body: bodyMatch ? bodyMatch[1].trim() : xml };
 }
