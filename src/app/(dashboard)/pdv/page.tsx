@@ -98,6 +98,7 @@ export default function PdvPage() {
   const [erro, setErro] = useState("");
   const [confirmandoVenda, setConfirmandoVenda] = useState(false);
   const [vendaCupom, setVendaCupom] = useState<{
+    id: string;
     numero: number;
     total: number;
     subtotal: number;
@@ -335,6 +336,7 @@ export default function PdvPage() {
         const venda = await res.json();
         const creditLabel = creditoUsar > 0 ? ` + Crédito ${formatCurrency(creditoUsar)}` : "";
         setVendaCupom({
+          id: venda.id,
           numero: venda.numero,
           total: Number(venda.total),
           subtotal,
@@ -443,6 +445,7 @@ export default function PdvPage() {
         <div className="w-full max-w-lg">
           <CupomVenda
             venda={vendaCupom}
+            vendaId={vendaCupom.id}
             onNovaVenda={() => setVendaCupom(null)}
           />
         </div>

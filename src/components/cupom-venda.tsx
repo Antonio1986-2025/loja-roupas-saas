@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Printer, ArrowRight } from "lucide-react";
+import { Printer, ArrowRight, FileText, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 
 interface ItemCupom {
   nome: string;
@@ -24,6 +25,7 @@ interface Props {
     itens: ItemCupom[];
     createdAt: string;
   };
+  vendaId?: string;
   onNovaVenda: () => void;
 }
 
@@ -65,10 +67,35 @@ function imprimir() {
   win.document.close();
 }
 
-export function CupomVenda({ venda, onNovaVenda }: Props) {
+export function CupomVenda({ venda, vendaId, onNovaVenda }: Props) {
   const { data: session } = useSession();
+  const [emitindoNfe, setEmitindoNfe] = useState(false);
+  const [nfeResultado, setNfeResultado] = useState<{ success: boolean; chaveAcesso?: string; message?: string } | null>(null);
   const data = new Date(venda.createdAt);
   const dataStr = data.toLocaleDateString("pt-BR") + " " + data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  const emitirNfe = async () => {
+    if (!vendaId) return;
+    setEmitindoNfe(true);
+    setNfeResultado(null);
+    try {
+      const res = await fetch("/api/nfe/emitir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vendaId, tipo: "NFE" }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setNfeResultado({ success: true, chaveAcesso: json.chaveAcesso });
+      } else {
+        setNfeResultado({ success: false, message: json.message || json.error || "Erro ao emitir NF-e" });
+      }
+    } catch {
+      setNfeResultado({ success: false, message: "Erro ao conectar com o servidor" });
+    } finally {
+      setEmitindoNfe(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center gap-6 py-4">
@@ -134,7 +161,40 @@ export function CupomVenda({ venda, onNovaVenda }: Props) {
         </p>
       </div>
 
+      {nfeResultado && (
+        <div className={`w-full max-w-sm text-sm p-3 rounded-md border ${
+          nfeResultado.success
+            ? "bg-green-50 border-green-200 text-green-800"
+            : "bg-red-50 border-red-200 text-red-800"
+        }`}>
+          {nfeResultado.success ? (
+            <div className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">NF-e emitida!</p>
+                <p className="text-xs mt-1 break-all font-mono">{nfeResultado.chaveAcesso}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <p>{nfeResultado.message}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex gap-3">
+        {vendaId && !nfeResultado?.success && (
+          <Button variant="outline" onClick={emitirNfe} disabled={emitindoNfe}>
+            {emitindoNfe ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="mr-2 h-4 w-4" />
+            )}
+            {emitindoNfe ? "Emitindo..." : "Emitir NFe"}
+          </Button>
+        )}
         <Button variant="outline" onClick={imprimir}>
           <Printer className="mr-2 h-4 w-4" />
           Imprimir
@@ -143,8 +203,10 @@ export function CupomVenda({ venda, onNovaVenda }: Props) {
           Nova Venda
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
-        <hr className="border-t border-dashed mt-3" />
-        <p className="text-center text-[10px] text-muted-foreground mt-2 opacity-60">
+      </div>
+      <div className="flex flex-col items-center gap-1 mt-3">
+        <hr className="border-t border-dashed w-full" />
+        <p className="text-center text-[10px] text-muted-foreground opacity-60">
           Powered by Stori
         </p>
       </div>
