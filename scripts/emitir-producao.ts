@@ -14,7 +14,7 @@ async function main() {
   let cliente = await prisma.cliente.findFirst({ where: { tenantId: config.tenantId } });
   if (!cliente) {
     cliente = await prisma.cliente.create({
-      data: { tenantId: config.tenantId, nome: "Cliente Teste", cpfCnpj: "52998224725", tipoPessoa: "FISICA" },
+      data: { tenantId: config.tenantId, nome: "Cliente Teste", cpf: "52998224725" },
     });
     console.log("Cliente criado:", cliente.id);
   } else {

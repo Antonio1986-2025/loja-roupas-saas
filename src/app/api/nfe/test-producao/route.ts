@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       let cliente = await prisma.cliente.findFirst({ where: { tenantId: tid } });
       if (!cliente) {
         cliente = await prisma.cliente.create({
-          data: { tenantId: tid!, nome: "Cliente Teste", cpfCnpj: "52998224725", tipoPessoa: "FISICA" },
+          data: { tenantId: tid!, nome: "Cliente Teste", cpf: "52998224725" },
         });
       }
 
