@@ -4,24 +4,20 @@ import { authOptions } from "@/lib/auth";
 import { emitirNFe, NfeEmissaoError } from "@/lib/services/nfe-emissao.service";
 
 export async function POST(req: NextRequest) {
-  let tenantId: string | null = null;
-
-  // Try session first, fall back to body.tenantId for testing
   const session = await getServerSession(authOptions);
-  if (session?.user?.tenantId) {
-    tenantId = session.user.tenantId;
+  if (!session) {
+    return NextResponse.json({ error: "NAO_AUTENTICADO" }, { status: 401 });
   }
 
   try {
     const body = await req.json();
-    const { vendaId, tipo, tenantId: bodyTenant } = body;
-    if (!tenantId) tenantId = bodyTenant || null;
+    const { vendaId, tipo } = body;
 
-    if (!vendaId || !tenantId) {
-      return NextResponse.json({ error: "VENDA_E_TENANT_OBRIGATORIOS", message: "Informe vendaId e tenantId" }, { status: 400 });
+    if (!vendaId) {
+      return NextResponse.json({ error: "VENDA_OBRIGATORIA", message: "Informe o ID da venda" }, { status: 400 });
     }
 
-    const resultado = await emitirNFe(tenantId, vendaId, tipo || "NFE");
+    const resultado = await emitirNFe(session.user.tenantId, vendaId, tipo || "NFE");
 
     return NextResponse.json({
       success: true,
