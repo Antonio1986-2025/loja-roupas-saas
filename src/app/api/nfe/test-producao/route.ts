@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       let produto = await prisma.produto.findFirst({ where: { tenantId: tid } });
       if (!produto) {
         produto = await prisma.produto.create({
-          data: { tenantId: tid!, nome: "Produto Teste", preco: 1.0 },
+          data: { tenantId: tid!, nome: "Produto Teste", precoVenda: 1.0 },
         });
       }
 
