@@ -328,7 +328,7 @@ export async function emitirNFe(
 
   // Minificar XML antes de assinar: remove quebras de linha entre tags
   // para evitar cStat 588 sem invalidar a assinatura.
-  const nfeXml = nfeXmlPretty.replace(/>\n\s+</g, "><");
+  const nfeXml = nfeXmlPretty.replace(/>\s+</g, "><");
 
   // 10. Extrair chave e certificado
   const { certPem, keyPem } = extractPfx(sefazConfig.pfxBase64, sefazConfig.senhaCertificado);
