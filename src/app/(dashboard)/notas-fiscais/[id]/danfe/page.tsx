@@ -15,7 +15,7 @@ export default async function DanfePage({ params }: { params: { id: string } }) 
         itens: {
           include: {
             variante: {
-              select: { codigo: true, codigoBarras: true, produto: { select: { nome: true } } },
+              select: { codigoBarras: true, codigoInterno: true, produto: { select: { nome: true } } },
             },
           },
         },
@@ -54,7 +54,7 @@ export default async function DanfePage({ params }: { params: { id: string } }) 
           clienteEstado: nota.clienteEstado || undefined,
 
           itens: nota.itens.map((item) => ({
-            codigo: item.variante?.codigo || item.varianteId,
+            codigo: item.variante?.codigoBarras || item.variante?.codigoInterno || item.varianteId,
             nome: item.variante?.produto?.nome || "Produto",
             ncm: item.ncm || undefined,
             cfop: item.cfop || undefined,
