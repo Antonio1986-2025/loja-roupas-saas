@@ -543,12 +543,7 @@ export function buildEnviNFe(
   indSinc: string = "1" // 1=síncrono
 ): string {
   const cleanXml = nfeXml.replace(/^<\?xml[^>]*\?>/, "").trim();
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<enviNFe versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
-  <idLote>${idLote}</idLote>
-  <indSinc>${indSinc}</indSinc>
-  ${cleanXml}
-</enviNFe>`;
+  return `<?xml version="1.0" encoding="UTF-8"?><enviNFe versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe"><idLote>${idLote}</idLote><indSinc>${indSinc}</indSinc>${cleanXml}</enviNFe>`;
 }
 
 // ============================================
