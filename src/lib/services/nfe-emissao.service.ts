@@ -306,7 +306,7 @@ export async function emitirNFe(
   });
 
   // 9. Construir XML
-  const nfeXml = buildNFeXml(
+  const nfeXmlPretty = buildNFeXml(
     {
       modelo,
       serie,
@@ -325,6 +325,10 @@ export async function emitirNFe(
     },
     chaveAcesso
   );
+
+  // Minificar XML antes de assinar: remove quebras de linha entre tags
+  // para evitar cStat 588 sem invalidar a assinatura.
+  const nfeXml = nfeXmlPretty.replace(/>\n\s+</g, "><");
 
   // 10. Extrair chave e certificado
   const { certPem, keyPem } = extractPfx(sefazConfig.pfxBase64, sefazConfig.senhaCertificado);
