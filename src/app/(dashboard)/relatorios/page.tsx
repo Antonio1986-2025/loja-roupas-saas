@@ -247,7 +247,7 @@ export default function RelatoriosPage() {
                           tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
                         />
                         <Tooltip
-                          formatter={(value: number) => [formatCurrency(value), "Receita"]}
+                          formatter={(value: any) => [formatCurrency(Number(value)), "Receita"]}
                         />
                         <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                       </BarChart>
@@ -277,8 +277,8 @@ export default function RelatoriosPage() {
                           cx="50%"
                           cy="50%"
                           outerRadius={100}
-                          label={({ forma, percent }) =>
-                            `${forma} (${(percent * 100).toFixed(0)}%)`
+                          label={({ name, percent }: { name?: string; percent?: number }) =>
+                            `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
                           }
                         >
                           {vendasPorPagamento.map((entry) => (
@@ -289,7 +289,7 @@ export default function RelatoriosPage() {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(value: number) => [formatCurrency(value), "Total"]}
+                          formatter={(value: any) => [formatCurrency(Number(value)), "Total"]}
                         />
                       </PieChart>
                     </ResponsiveContainer>

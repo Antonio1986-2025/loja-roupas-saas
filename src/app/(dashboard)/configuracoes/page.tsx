@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Save, Shield, Upload, Trash2, Building2, Image } from "lucide-react";
+import { Loader2, Save, Shield, Upload, Trash2, Building2, Image, AlertTriangle } from "lucide-react";
 
 export default function ConfiguracoesPage() {
   const router = useRouter();
@@ -32,6 +32,7 @@ export default function ConfiguracoesPage() {
   const [certificadoNome, setCertificadoNome] = useState("");
   const [certificadoArquivo, setCertificadoArquivo] = useState<File | null>(null);
   const [senhaCertificado, setSenhaCertificado] = useState("");
+  const [ambienteNFe, setAmbienteNFe] = useState("2");
 
   // Logo
   const [logoAtual, setLogoAtual] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export default function ConfiguracoesPage() {
           setAlertaEstoqueBaixo(d.alertaEstoqueBaixo ?? true);
           if (d.certificadoA1) setCertificadoNome("Certificado configurado");
           if (d.senhaCertificado) setSenhaCertificado(d.senhaCertificado);
+          if (d.ambienteNFe) setAmbienteNFe(d.ambienteNFe);
         }
 
         if (resLogo.ok) {
@@ -138,6 +140,7 @@ export default function ConfiguracoesPage() {
           nomeEmpresa, cnpj, telefone, email, endereco,
           cidade, estado, cep, corPrimaria, corSecundaria,
           emailNotificacoes, alertaEstoqueBaixo,
+          ambienteNFe,
           certificadoA1: certificadoA1 || undefined,
           senhaCertificado: senhaCertificado || null,
         }),
@@ -368,6 +371,47 @@ export default function ConfiguracoesPage() {
                 <Input id="senhaCert" type="password" value={senhaCertificado}
                   onChange={(e) => setSenhaCertificado(e.target.value)} placeholder="Senha do arquivo .pfx" />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" /> Ambiente NF-e
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Selecione o ambiente de emissão das Notas Fiscais Eletrônicas.
+              </p>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="ambienteNFe" value="2" checked={ambienteNFe === "2"}
+                    onChange={() => setAmbienteNFe("2")} className="h-4 w-4" />
+                  <div>
+                    <p className="text-sm font-medium">Homologação (Teste)</p>
+                    <p className="text-xs text-muted-foreground">Notas fiscais sem validade fiscal</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="ambienteNFe" value="1" checked={ambienteNFe === "1"}
+                    onChange={() => setAmbienteNFe("1")} className="h-4 w-4" />
+                  <div>
+                    <p className="text-sm font-medium">Produção</p>
+                    <p className="text-xs text-muted-foreground">Notas fiscais com validade fiscal</p>
+                  </div>
+                </label>
+              </div>
+              {ambienteNFe === "1" && (
+                <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-xs text-yellow-800 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Atenção:</strong> Em Produção as notas fiscais terão validade fiscal real.
+                    Certifique-se de que o certificado A1 e o CNPJ estão corretos.
+                    O ambiente de homologação é recomendado para testes.
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
 

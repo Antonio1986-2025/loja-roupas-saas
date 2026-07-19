@@ -62,6 +62,7 @@ export async function atualizarConfiguracao(
       corSecundaria: data.corSecundaria,
       emailNotificacoes: data.emailNotificacoes,
       alertaEstoqueBaixo: data.alertaEstoqueBaixo,
+      ambienteNFe: data.ambienteNFe,
       ...(data.certificadoA1 === null
         ? { certificadoA1: null, senhaCertificado: null }
         : data.certificadoA1

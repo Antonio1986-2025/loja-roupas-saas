@@ -16,6 +16,7 @@ export const updateConfiguracaoSchema = z.object({
   corSecundaria: z.string().optional(),
   emailNotificacoes: z.boolean().optional(),
   alertaEstoqueBaixo: z.boolean().optional(),
+  ambienteNFe: z.enum(["1", "2"]).optional(),
 });
 
 export type UpdateConfiguracaoInput = z.infer<typeof updateConfiguracaoSchema>;
