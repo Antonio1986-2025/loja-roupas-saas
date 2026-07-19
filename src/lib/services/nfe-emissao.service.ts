@@ -326,17 +326,11 @@ export async function emitirNFe(
     chaveAcesso
   );
 
-  // 9b. Minificar XML ANTES de assinar — a SEFAZ rejeita com cStat 588
-  // se houver caracteres de edição entre tags. A minificação precisa
-  // acontecer ANTES da assinatura para não invalidar o hash do digest.
-  const nfeXmlMin = nfeXml.replace(/>\s+</g, "><");
-
   // 10. Extrair chave e certificado
   const { certPem, keyPem } = extractPfx(sefazConfig.pfxBase64, sefazConfig.senhaCertificado);
 
   // 11. Assinar XML (assinar <infNFe>)
   const signedNfe = signXml(
-    nfeXmlMin,
     nfeXml,
     certPem,
     keyPem,
