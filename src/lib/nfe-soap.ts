@@ -261,11 +261,7 @@ export function buildSoapEnvelope(
   const wsdlNome = SERVICO_WSDL_NOME[servico] || servico;
   const cleanXml = signedXml
     .replace(/^<\?xml[^>]*\?>/, "")
-    .trim()
-    // Remove whitespace ENTRE tags (>  <) para evitar cStat 588 (caracteres
-    // de edição). Isso é seguro fazer APÓS a assinatura porque a
-    // canonicalização C14N normaliza whitespace no cálculo do digest.
-    .replace(/>\s+</g, "><");
+    .trim();
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
